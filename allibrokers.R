@@ -1,4 +1,291 @@
-`.lastRequest` <- 10
+`errorHandler` <-
+function(con, verbose) {
+  err <- readBin(con,character(),4)
+  if(verbose) {
+    warning(paste(err[4]))
+  }
+  if(as.numeric(err[3]) %in% c(165,2106)) {
+    return(TRUE)
+  } else return(FALSE)
+}
+`parseTWS` <-
+function(char) {
+  if(length(char) == 1) {
+    charv <- sapply(charToRaw(char),function(x) ifelse(x=='00','|',rawToChar(x)))
+    strsplit(paste(charv,collapse=''),'\\|')[[1]]
+  }
+}
+
+`reqCurrentTime` <-
+function(con) {
+  con <- con[[1]]
+  readBin(con,character(),100) # flush any residual TWS messages
+
+  writeBin(.twsOutgoingMSG$REQ_CURRENT_TIME,con)
+  writeBin('1',con)
+
+  # removes the need to Sys.sleep
+  waiting <- TRUE
+  response <- character(0)
+
+  while(waiting) {
+    curChar <- readBin(con,character(),1)
+    
+    if(length(curChar) > 0 && curChar==.twsIncomingMSG$CURRENT_TIME) {
+      currentTime <- readBin(con,character(),2)[2]
+      waiting <- FALSE
+    }
+
+  }
+  tz <- Sys.getenv("TZ")
+  on.exit(Sys.setenv(TZ=tz))
+  Sys.setenv(TZ='GMT')
+  xts:::as.POSIXct.numeric(as.numeric(currentTime),tz='GMT',origin='1970-01-01')
+}
+
+`reqHistoricalData` <-
+function(conn,Contract,endDateTime,
+         barSize='1 day',duration='1 M',
+         useRTH='1',whatToShow='TRADES',time.format='1',
+         verbose=TRUE)
+{
+  if(class(conn) != 'twsConnection') stop('tws connection object required')
+  if(class(Contract) != 'twsContract') stop('twsContract required')
+
+  if(!barSize %in% c('1 secs','5 secs','15 secs','30 secs',
+                     '1 min', '2 mins','3 mins','5 mins','15 mins',
+                     '30 mins','1 hour','1 day','1 week','1 month',
+                     '3 months','1 year'))
+    stop('unknown barSize')
+
+  con <- conn[[1]]
+
+  if(missing(endDateTime)) 
+    endDateTime <- strftime(
+                     as.POSIXlt(as.POSIXct('1970-01-01')+
+                     as.numeric(reqCurrentTime(con))),
+                     format='%Y%m%d %H:%M:%S',use=FALSE)
+
+  signals <- c(.twsOutgoingMSG$REQ_HISTORICAL_DATA, # '20'
+               '4', # version
+               '1', # tick id
+               Contract$symbol, Contract$sectype,
+               Contract$expiry, Contract$strike,
+               Contract$right,  Contract$multiplier,
+               Contract$exch,   Contract$primary,
+               Contract$currency, Contract$local,
+               Contract$include_expired,
+               endDateTime, barSize, duration, useRTH,
+               whatToShow, time.format)
+#  signals <- c('20','4','1',
+#               'QQQQ','STK','',
+#               '0.0','','',
+#               'SMART','ISLAND','USD',
+#               '','0','20080219 21:11:41 GMT',
+#               '1 day','1 M','1',
+#               'TRADES','1')
+  readBin(con,character(),100) # flush the input stream
+
+  for(i in 1:length(signals)) {
+    writeBin(signals[i],con)
+  }
+
+  waiting <- TRUE           # waiting for valid response?
+  response <- character(0)  # currently read response
+
+  if(verbose) cat('waiting for TWS reply ...')
+
+  while(waiting) {
+    curMsg <- readBin(con,character(),1)
+    #if(waiting & identical(curMsg,character(0))) next
+    if(verbose) cat('.')
+    Sys.sleep(.25)
+
+    if(length(curMsg) > 0) {
+      if(curMsg == .twsIncomingMSG$ERR_MSG) {
+        if(!errorHandler(con,verbose)) invisible()
+      }
+  
+      if(curMsg == .twsIncomingMSG$HISTORICAL_DATA) {
+        header <- readBin(con,character(),5)
+        header <- list(from=header[3],
+                       to=header[4])
+        ret <- character()
+        while(1) {
+          # retrieve all data
+          response <- readBin(con,character(),10000)
+          ret <- c(ret,response)
+          if(identical(response,character(0))) 
+            break
+        }
+        waiting <- FALSE
+        if(verbose) cat(' done.\n')
+      }
+    }
+  }
+
+  
+  cm <- matrix(ret,nc=9,byrow=TRUE)
+  cm[,8] <- ifelse(cm[,8]=='false',0,1)
+  dts <- gsub('(\\d{4})(\\d{2})(\\d{2})','\\1-\\2-\\3',cm[,1],perl=TRUE)
+  x <- xts(matrix(as.numeric(cm[,-1]),nc=8),order.by=as.POSIXct(dts))
+  colnames(x) <- c('Open','High','Low','Close','Volume',
+                   'WAP','hasGaps','Count')
+  xtsAttributes(x) <- list(from=header$from,to=header$to)
+  x
+}
+
+`serverVersion` <-
+function(con) {
+  if(!inherits(con,'twsConnection'))
+    stop('con must be a twsConnection object')
+
+  con$server.version
+}
+`twsConnect` <-
+function (clientId=1, host='localhost', port = 7496)
+ {
+     s <- socketConnection(host = host, port = port, open='ab')
+
+     if(!isOpen(s)) { 
+       close(s)
+       stop(paste("couldn't connect to TWS on port",port))
+     }
+
+     writeBin("37", s)
+     waiting <- TRUE
+     while(waiting) {
+       response <- readBin(s,character(),1)
+       if(length(response) > 0 && response %in% c('39','40')) {
+         SERVER_VERSION <- response
+         while(waiting) {
+           response <- readBin(s,character(),1)
+           if(length(response) > 0) {
+             CONNECTION_TIME <- response
+             waiting <- FALSE
+           }
+         }
+       }
+     }
+
+     writeBin(as.character(clientId), s)
+
+     structure(list(s,
+                    clientId=clientId,port=port,
+                    server.version=SERVER_VERSION,
+                    connected.at=CONNECTION_TIME), 
+                    class = "twsConnection")
+ }
+
+`twsConnect2` <-
+function (port = 7496, clientID = 1)
+ {
+     s <- socketConnection(port = port)
+     writeChar("37", s)
+     writeChar(as.character(clientID), s)
+     waiting <- TRUE
+     while (1) {
+         curChars <- readChar(s,1000)
+         #curChar <- readChar(s, 1)
+         if (waiting & identical(curChars, character(0)))
+             next
+         waiting <- FALSE
+ 
+         # process what is captured thus far
+         pc <- parseTWS(curChars)
+         SERVERINFO <- FALSE
+ 
+         if(!SERVERINFO & length(pc) > 0) {
+           SERVER_VERSION <- pc[1]
+           CONNECTION_TIME <- pc[2]
+           SERVERINFO <- TRUE
+         }
+ 
+         if (identical(curChars, character(0)))
+             break
+     }
+     structure(list(s,SERVER_VERSION,CONNECTION_TIME), class = "twsConnection")
+ }
+
+`twsConnect0` <-
+function(port=7496,clientID=1) {
+  s <- socketConnection(port=port)
+  writeChar('37',s)
+  writeChar(as.character(clientID),s)
+#  writeChar('37',s,eos=NULL)
+#  writeChar('',s)
+#  writeChar('1',s,eos=NULL)
+#  writeChar('',s)
+
+  waiting <- TRUE
+
+  while(1) {
+    curChar <- readChar(s,1)
+    if(waiting & identical(curChar,character(0))) next
+    waiting <- FALSE
+
+    if(identical(curChar,character(0))) break
+
+#    if(charToRaw(curChar)=='00') {
+#      # replace \0 in reply with blanks
+#      response[length(response)+1] <- ' '
+#    } else response[length(response)+1] <- curChar
+  }
+#  readChar(s,255)
+  structure(list(s),class='twsConnection')
+}
+
+`twsConnectionTime` <-
+function(con) {
+  if(!inherits(con,'twsConnection'))
+    stop('con must be a twsConnection object')
+
+  return(con$connected.at)
+}
+`twsContract` <-
+function(symbol,sectype,exch,primary,expiry,strike,
+         currency,right,local,multiplier,combo_legs_desc,
+         comboleg,include_expired)
+{
+  structure(
+            list(symbol=symbol,
+                 sectype=sectype,
+                 exch=exch,
+                 primary=primary,
+                 expiry=expiry,
+                 strike=strike,
+                 currency=currency,
+                 right=right,
+                 local=local,
+                 multiplier=multiplier,
+                 combo_legs_desc=combo_legs_desc,
+                 comboleg=comboleg,
+                 include_expired=include_expired),
+            class='twsContract'
+           )
+}
+
+`twsDisconnect` <-
+function(con) {
+  if(class(con)!='twsConnection') stop("not a tws connection")
+  close(con[[1]])
+}
+
+`twsEquity` <-
+function(symbol,exch,primary,strike='0.0',
+         currency='USD',right='',local='',multiplier='',include_expired='0')
+{
+  twsContract(symbol,'STK',exch,primary,expiry='',strike,
+              currency,right,local,multiplier,NULL,NULL,include_expired)
+}
+
+`twsFuture` <-
+function(symbol,exch,expiry,primary='',
+         currency='USD',right='',local='',multiplier='',include_expired='0')
+{
+  twsContract(symbol,'FUT',exch,primary,expiry,strike='0.0',
+              currency,right,local,multiplier,NULL,NULL,include_expired)
+}
 
 `.twsOutgoingMSG` <-
 structure(list(REQ_MKT_DATA = "1", CANCEL_MKT_DATA = "2", PLACE_ORDER = "3", 
@@ -193,3 +480,13 @@ structure(c("Max rate of messages per second has been exceeded.",
 "526", "527", "528", "529", "530", "531", "1101", "1102", "1300", 
 "2100", "2101", "2102", "2103", "2104", "2105", "2106", "2107", 
 "2108", "2109"), NULL))
+`print.twsConnection` <-
+function(x,...) {
+  cat('<twsConnection at',
+      as.character(x$connected.at),'>\n')
+}
+
+`.onLoad` <- function(lib,pkg) {
+  cat("IBrokers version 0.0-1: (pre-alpha)\n")
+  cat("See ?IBrokers for details\n")
+}
