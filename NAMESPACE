@@ -1,18 +1,50 @@
 export(twsConnect,
        twsDisconnect,
+
        twsConnectionTime,
        serverVersion,
-       twsContract,
-       twsEquity,
-       twsFuture,
-       twsOption,
        reqCurrentTime,
-       reqHistoricalData,
-       reqMktData,
-       reqMktDepth,
-       reqRealTimeBars,
-       cancelHistoricalData)
 
-export(.twsIncomingMSG,.twsOutgoingMSG,.twsERR,.twsTickType)
+       reqIds,
+
+       reqContractDetails,
+
+       reqAccountUpdates,
+
+       twsContract,
+       twsCurrency,
+       twsCASH,
+       twsEquity,
+       twsSTK,
+       twsFuture,
+       twsFUT,
+       twsOption,
+       twsOPT,
+
+       reqHistoricalData,
+       cancelHistoricalData,
+
+       reqMktData,
+       cancelMktData,
+
+       reqMktDepth,
+       cancelMktDepth,
+
+       reqRealTimeBars,
+       cancelRealTimeBars,
+
+       twsOrder,
+       placeOrder,
+       cancelOrder
+      )
+
+export(.twsIncomingMSG,
+       .twsOutgoingMSG,
+       .twsERR,
+       .twsTickType,
+       .twsOrderID
+      )
 
 S3method(print,twsConnection)
+S3method(print,twsContract)
+S3method(print,twsContractDetails)

@@ -3,6 +3,9 @@ function(symbol,sectype,exch,primary,expiry,strike,
          currency,right,local,multiplier,combo_legs_desc,
          comboleg,include_expired)
 {
+  if(is.null(names(match.call()[-1])))
+    return(do.call("twsContract", rep(list(NULL), 13)))
+
   structure(
             list(symbol=symbol,
                  sectype=sectype,
@@ -21,3 +24,35 @@ function(symbol,sectype,exch,primary,expiry,strike,
            )
 }
 
+`print.twsContractDetails` <- `print.twsContract` <-
+function(x, ...) {
+  str(unclass(x))
+}
+
+
+`twsContractDetails` <-
+function(version=NULL,
+         contract=do.call('twsContract',rep(list(NULL),13)),
+         marketName=NULL,
+         tradingClass=NULL,
+         conId=NULL,
+         minTick=NULL,
+         multiplier=NULL,
+         orderTypes=NULL,
+         validExchanges=NULL,
+         priceMagnifier=NULL
+         )
+  structure(
+            list(version=version,
+                 contract=contract,
+                 marketName=marketName,
+                 tradingClass=tradingClass,
+                 conId=conId,
+                 minTick=minTick,
+                 multiplier=multiplier,
+                 orderTypes=orderTypes,
+                 validExchanges=validExchanges,
+                 priceMagnifier=priceMagnifier
+                ),
+            class='twsContractDetails'
+           )

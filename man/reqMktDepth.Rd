@@ -1,5 +1,6 @@
 \name{reqMktDepth}
 \alias{reqMktDepth}
+\alias{cancelMktDepth}
 \title{ Request Market Depth Feed from TWS }
 \description{
 Allows for streaming market depth (order book) data
@@ -11,11 +12,14 @@ reqMktDepth(conn,
             tickerId = "1",
             numRows = "20",
             timeStamp = TRUE,
+            playback = 1,
             file = "",
             verbose = TRUE,
             eventUpdateMktDepth,
             eventUpdateMktDepthL2,
             CALLBACK, ...)
+
+cancelMktDepth(conn,tickerId)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -24,6 +28,7 @@ reqMktDepth(conn,
   \item{tickerId}{ the ticker id to associate with the returned data }
   \item{numRows}{ depth of book }
   \item{timeStamp}{ include \R time stamps }
+  \item{playback}{ playback speed adjustment }
   \item{file}{ passed to internal \code{cat} calls. See associated help. }
   \item{verbose}{ print diagnostics? }
   \item{eventUpdateMktDepth}{ callback function, if any }

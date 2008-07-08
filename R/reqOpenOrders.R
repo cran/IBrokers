@@ -1,20 +1,19 @@
-`reqCurrentTime` <-
+`reqOpenOrders` <-
 function(conn) {
   if(!inherits(conn,'twsConnection'))
     stop('requires twsConnection object')
 
   con <- conn[[1]]
 
-  writeBin(.twsOutgoingMSG$REQ_CURRENT_TIME,con)
-  writeBin('1',con)
+  VERSION <- "1"
+
+  writeBin(.twsOutgoingMSG$REQ_OPEN_ORDERS, con)
+  writeBin(VERSION, con)
 
   waiting <- TRUE
-  response <- character(0)
 
   while(waiting) {
-    # suppressWarnings to handle readBin issues in Windows
-    # not returning character(0) when it should
-    curChar <- suppressWarnings(readBin(con,character(),1))
+    curChar <- readBin(con,character(),1)
     
     if(length(curChar) > 0) {
       if(curChar==.twsIncomingMSG$CURRENT_TIME) {

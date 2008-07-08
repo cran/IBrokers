@@ -1,6 +1,7 @@
+#####  TICK_PRICE ##### {{{
 `e_tick_price`    <- function(msg,string,timeStamp,file,...) {
   tickType <- string[3]
-  if(!is.null(timeStamp)) cat('<',format(Sys.time(),timeStamp),'>',sep='',file=file,append=TRUE)
+  if(!is.null(timeStamp)) cat('<',as.character(timeStamp),'>',sep='',file=file,append=TRUE)
   cat(" id=",string[2]," ",sep='',file=file,append=TRUE)
   if(tickType == .twsTickType$BID) {
     cat('bidPrice:',string[4],' ',file=file,append=TRUE)
@@ -48,10 +49,11 @@
     cat(msg,paste(string),'\n',file=file,append=TRUE)
   }
 }
+#####  END TICK_PRICE ##### }}}
 
 `e_tick_size`    <- function(msg,string,timeStamp,file,...) {
   tickType <- string[3] 
-  if(!is.null(timeStamp)) cat('<',format(Sys.time(),timeStamp),'>',sep='',file=file,append=TRUE)
+  if(!is.null(timeStamp)) cat('<',as.character(timeStamp),'>',sep='',file=file,append=TRUE)
   cat(" id=",string[2]," ",sep='',file=file,append=TRUE)
   if(tickType == .twsTickType$BID_SIZE) {
     cat('bidSize:',string[4],'\n',file=file,append=TRUE)
@@ -87,7 +89,7 @@
 
 `e_tick_option`  <- function(msg,string,timeStamp,file,...) {
   tickType <- string[3] 
-  if(!is.null(timeStamp)) cat('<',format(Sys.time(),timeStamp),'>',sep='',file=file,append=TRUE)
+  if(!is.null(timeStamp)) cat('<',as.character(timeStamp),'>',sep='',file=file,append=TRUE)
   cat(" id=",string[2]," ",sep='',file=file,append=TRUE)
   if(tickType == .twsTickType$BID_OPTION) { #10
     cat('bidOption:',string[4],string[5],'\n',file=file,append=TRUE)
@@ -108,7 +110,7 @@
 
 `e_tick_generic` <- function(msg,string,timeStamp,file,...) {
   tickType <- string[3] 
-  if(!is.null(timeStamp)) cat('<',format(Sys.time(),timeStamp),'>',sep='',file=file,append=TRUE)
+  if(!is.null(timeStamp)) cat('<',as.character(timeStamp),'>',sep='',file=file,append=TRUE)
   cat(" id=",string[2]," ",sep='',file=file,append=TRUE)
   if(tickType == .twsTickType$OPTION_IMPLIED_VOL) { #24
     cat('indexFuturePremium:',string[4],'\n',file=file,append=TRUE)
@@ -129,7 +131,7 @@
 
 `e_tick_string`  <- function(msg,contents,timeStamp,file,...) {
   tickType <- contents[3] 
-  if(!is.null(timeStamp)) cat('<',format(Sys.time(),timeStamp),'>',sep='',file=file,append=TRUE)
+  if(!is.null(timeStamp)) cat('<',as.character(timeStamp),'>',sep='',file=file,append=TRUE)
   cat(" id=",contents[2]," ",sep='',file=file,append=TRUE)
   if(tickType == .twsTickType$BID_EXCH) { #32
     cat('bidExchange:',contents[4],'\n',file=file,append=TRUE)
@@ -157,14 +159,14 @@
 ######################################################################
 
 `e_update_mkt_depth` <-  function(msg,contents,timeStamp,file,...) {
-  if(!is.null(timeStamp)) cat('<',format(Sys.time(),timeStamp),'>,',sep='',file=file,append=TRUE)
+  if(!is.null(timeStamp)) cat('<',as.character(timeStamp),'>,',sep='',file=file,append=TRUE)
   id <- contents[2]
   position <- contents[3]
   operation <- switch(contents[4],
                       '0' = 'insert',
                       '1' = 'update',
                       '2' = 'delete')
-  side <- ifelse(contents[5]=='0','bid','ask')
+  side <- ifelse(contents[5]=='1','bid','ask')
   price <- contents[6]
   size <- contents[7]
 
@@ -177,7 +179,7 @@
 }
 
 `e_update_mkt_depthL2` <-  function(msg,contents,timeStamp,file,...) {
-  if(!is.null(timeStamp)) cat('<',format(Sys.time(),timeStamp),'>,',sep='',file=file,append=TRUE)
+  if(!is.null(timeStamp)) cat('<',as.character(timeStamp),'>,',sep='',file=file,append=TRUE)
   id <- contents[2]
   position <- contents[3]
   marketMaker <- contents[4]
@@ -185,7 +187,7 @@
                       '0' = 'insert',
                       '1' = 'update',
                       '2' = 'delete')
-  side <- ifelse(contents[6]=='0','bid','ask')
+  side <- ifelse(contents[6]=='1','bid','ask')
   price <- contents[7]
   size <- contents[8]
 
@@ -205,8 +207,218 @@
 #
 ######################################################################
 
-`event_real_time_bars` <- function(msg,contents,file=file,...) {
+`e_real_time_bars` <- function(msg,contents,file=file,...) {
   columns <- c("Id","time","open","high","low","close","volume",
                "wap","count")
   cat(paste(columns,"=",contents[-1],sep=""),'\n',file=file,append=TRUE)
 }
+
+
+######################################################################
+#
+#  default event handlers for orderStatus callbacks (from placeOrder, )
+#
+######################################################################
+
+`e_order_status` <- function(msg, contents, ...) {
+   eos <- list(orderId = contents[2],
+               status  = contents[3],
+               filled  = contents[4],
+               remaining = contents[5],
+               averageFillPrice = contents[6],
+               permId = contents[7],
+               parentId = contents[8],
+               lastFillPrice = contents[9],
+               clientId = contents[10],
+               whyHeld  = contents[11]
+  )
+  structure(eos)
+}
+
+
+`e_open_order` <- function(msg, contents, ...) {
+  eoo <- list(
+         # need to add contractId to twsContract...
+              contract   = twsContract(
+                            #contract = contents[3], #contractId not yet added :(
+                             symbol  = contents[4],
+                             sectype = contents[5],
+                             expiry  = contents[6],
+                             strike  = contents[7],
+                             right   = contents[8],
+                             exch    = contents[9],
+                             currency= contents[10],
+                             local   = contents[11],
+                             combo_legs_desc = contents[66],
+                             # the following are required to correctly specify a contract
+                             primary = NULL,
+                             include_expired = NULL,
+                             comboleg = NULL,
+                             multiplier = NULL
+                           ),
+
+              order      = twsOrder(
+                             orderId = contents[2],
+                             action  = contents[12],                           
+                             totalQuantity = contents[13],
+                             orderType     = contents[14],
+                             lmtPrice      = contents[15],
+                             auxPrice      = contents[16],
+                             tif           = contents[17],
+                             ocaGroup      = contents[18],
+                             account       = contents[19],
+                             openClose     = contents[20],
+                             origin        = contents[21],
+                             orderRef      = contents[22],
+                             clientId      = contents[23],
+                             permId        = contents[24],
+                             outsideRTH    = contents[25],
+                             hidden        = contents[26],
+                             discretionaryAmt = contents[27],
+                             goodAfterTime = contents[28],
+                             # skip deprecated amount contents[29]
+                             faGroup       = contents[30],
+                             faMethod      = contents[31],
+                             faPercentage  = contents[32],
+                             faProfile     = contents[33],
+                             goodTillDate  = contents[34],
+                             rule80A       = contents[35],
+                             settlingFirm  = contents[36],
+                             shortSaleSlot = contents[37],
+                             designatedLocation = contents[38],
+                             auctionStrategy = contents[39],
+                             startingPrice = contents[40],
+                             stockRefPrice = contents[41],
+                             delta         = contents[42],
+                             stockRangeLower = contents[43],
+                             stockRangeUpper = contents[44],
+                             displaySize   = contents[45],
+                             # rthOnly (version 18) = contents[46],
+                             blockOrder    = contents[47],
+                             sweepToFill   = contents[48],
+                             allOrNone     = contents[49],
+                             minQty        = contents[50],
+                             ocaType       = contents[51],
+                             eTradeOnly    = contents[52],
+                             firmQuoteOnly = contents[53],
+                             nbboPriceCap  = contents[54],
+                             parentId      = contents[55],
+                             triggerMethod = contents[56],
+                             volatility    = contents[57],
+                             volatilityType = contents[58],
+                             deltaNeutralOrderType = contents[59],
+                             deltaNeutralAuxPrice  = contents[60],
+                             continuousUpdate = contents[61],
+                             referencePriceType = contents[62],
+                             trailStopPrice     = contents[63],
+                             basisPoints        = contents[64],
+                             basisPointsType    = contents[65],
+                             # part of contract #66
+                             scaleNumComponents = contents[67],
+                             scaleComponentSize = contents[68],
+                             scalePriceIncrement = contents[69],
+                             clearingAccount = contents[70],
+                             clearingIntent  = contents[71],
+                             whatIf          = contents[72],
+                           ),
+
+              orderstate = twsOrderState(
+                             status      = contents[73],
+                             initMargin  = contents[74],
+                             maintMargin = contents[75],
+                             equityWithLoan = contents[76],
+                             commission  = contents[77],
+                             minCommission = contents[78],
+                             maxCommission = contents[79],
+                             commissionCurrency = contents[80],
+                             warningText = contents[81]
+                           )
+         )
+  structure(eoo, class='eventOpenOrder')
+}
+
+#####  EXECUTION_DATA ##### {{{
+`e_execution_data` <-
+function(msg, contents, ...) {
+
+       eed <- list(
+              contract   = twsContract(
+                            #contract = contents[3], #contractId not yet added :(
+                             symbol  = contents[4],
+                             sectype = contents[5],
+                             expiry  = contents[6],
+                             strike  = contents[7],
+                             right   = contents[8],
+                             exch    = contents[9],
+                             currency= contents[10],
+                             local   = contents[11],
+                             # the following are required to correctly specify a contract
+                             combo_legs_desc = NULL,
+                             primary = NULL,
+                             include_expired = NULL,
+                             comboleg = NULL,
+                             multiplier = NULL
+                           ),
+              execution  = twsExecution(orderId = contents[2],
+                                        execId  = contents[12],
+                                        time    = contents[13],
+                                        acctNumber = contents[14],
+                                        exchange   = contents[15],
+                                        side       = contents[16],
+                                        shares     = contents[17],
+                                        price      = contents[18],
+                                        permId     = contents[19],
+                                        clientId   = contents[20],
+                                        liquidation= contents[21]
+                                       )
+              )
+  structure(eed, class="eventExecutionData")
+}
+#####  END EXECUTION_DATA ##### }}}
+
+##### ACCOUNT_VALUE #### {{{
+`e_account_value` <-
+function(msg, contents, ...) {
+  # key          value        currency
+  c(contents[2], contents[3], contents[4])
+}
+##### END ACCOUNT_VALUE #### }}}
+
+
+##### ACCOUNT_TIME #### {{{
+`e_account_time` <-
+function(msg, contents, ...) {
+  contents[2]
+}
+##### END ACCOUNT_TIME #### }}}
+
+
+##### PORTFOLIO_VALUE #### {{{
+`e_portfolio_value` <-
+function(msg, contents, ...) {
+  version          <- as.numeric(contents[1])
+
+  contract         <- twsContract()
+ #contract$conId   <- contents[2]  NOT YET IMPLEMETED IN IBrokers
+  contract$symbol  <- contents[3]
+  contract$sectype <- contents[4]
+  contract$expiry  <- contents[5]
+  contract$strike  <- contents[6]
+  contract$right   <- contents[7]
+  contract$currency<- contents[8]
+  contract$local   <- contents[9]
+  
+  portfolioValue <- list()
+  portfolioValue$position      <- contents[10]
+  portfolioValue$marketPrice   <- contents[11]
+  portfolioValue$marketValue   <- contents[12]
+  portfolioValue$averageCost   <- contents[13]
+  portfolioValue$unrealizedPNL <- contents[14]
+  portfolioValue$realizedPNL   <- contents[15]
+  portfolioValue$accountName   <- contents[15]
+
+  structure(list(contract       = contract,
+                 portfolioValue = portfolioValue),
+            class="eventPortfolioValue") 
+}
+##### END ACCOUNT_DATA #### }}}

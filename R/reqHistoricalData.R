@@ -2,10 +2,9 @@
 function(conn,Contract,endDateTime,
          barSize='1 day',duration='1 M',
          useRTH='1',whatToShow='TRADES',time.format='1',
-         verbose=TRUE, tickerId='1', timeout=10, callback, file)
+         verbose=TRUE, tickerId='1',
+         eventHistoricalData, file)
 {
-  start.time <- Sys.time()
-
   if(class(conn) != 'twsConnection') stop('tws connection object required')
   if(class(Contract) != 'twsContract') stop('twsContract required')
 
@@ -18,14 +17,24 @@ function(conn,Contract,endDateTime,
 
   con <- conn[[1]]
 
+  cancelHistoricalData <- function(con, tickerId) 
+  {
+      if (!isOpen(con)) 
+          stop("invalid TWS connection")
+  
+      writeBin(.twsOutgoingMSG$CANCEL_HISTORICAL_DATA, con)
+      writeBin("1", con)
+      writeBin(as.character(tickerId), con)
+  }
+
   if(!isOpen(con)) stop("connection to TWS has been closed")
 
   on.exit(cancelHistoricalData(con,as.character(tickerId)))
 
-  if(missing(endDateTime)) 
+  if(missing(endDateTime) || is.null(endDateTime)) 
     endDateTime <- strftime(
                      as.POSIXlt(as.POSIXct('1970-01-01')+
-                     as.numeric(reqCurrentTime(con))),
+                     as.numeric(reqCurrentTime(conn))),
                      format='%Y%m%d %H:%M:%S',use=FALSE)
 
   VERSION <- "4"
@@ -95,18 +104,10 @@ function(conn,Contract,endDateTime,
         }
       }
     }
-    # need to add waiting test condition
-#    if(Sys.time() - start.time > timeout) {
-#      cancelHistoricalData(con,as.character(tickerId))
-#      cat('\n')
-#      stop("historical data request timed-out")
-#    }
-
-    #Sys.sleep(.1)
   }
 
   
-  if(missing(callback)) {
+  if(missing(eventHistoricalData)) {
     # the default: return an xts object
     cm <- matrix(response,nc=9,byrow=TRUE)
     cm[,8] <- ifelse(cm[,8]=='false',0,1)
@@ -131,14 +132,29 @@ function(conn,Contract,endDateTime,
                              src='IB',updated=Sys.time())
     return(x)
   } else
-  if(is.null(callback)) {
+  if(is.null(eventHistoricalData)) {
     # return raw TWS data including header
     return(c(header,response))
   } else {
     # pass to callback function
-    FUN <- match.fun(callback)
+    FUN <- match.fun(eventHistoricalData)
     return(FUN(c(header,response)))
   }
   
+}
+
+`cancelHistoricalData` <- function(conn, tickerId) 
+{
+    if(!inherits(conn, "twsConnection")) 
+        stop("twsConnection object required")
+
+    con <- conn[[1]]
+
+    if (!isOpen(con)) 
+        stop("invalid TWS connection")
+
+    writeBin(.twsOutgoingMSG$CANCEL_HISTORICAL_DATA, con)
+    writeBin("1", con)
+    writeBin(as.character(tickerId), con)
 }
 
