@@ -29,8 +29,43 @@ function(x, ...) {
   str(unclass(x))
 }
 
+is.twsContract <- function(x)
+{
+  inherits(x, 'twsContract')
+}
 
-`twsContractDetails` <-
+is.twsContractDetails <- function(x)
+{
+  inherits(x, 'twsContractDetails')
+}
+
+as.twsContract <- function(x, ...)
+{
+  UseMethod("as.twsContract")
+}
+
+as.twsContract.twsContract <- function(x, ...)
+{
+  x
+}
+
+as.twsContract.list <- function(x, ...)
+{
+  lapply(x, function(xx) {
+                if(is.twsContract(xx)) {
+                  return(xx)
+                } else
+                if(is.twsContractDetails(xx)) {
+                  return(as.twsContract(xx))
+                }})
+}
+
+as.twsContract.twsContractDetails <- function(x, ...)
+{
+  x$contract
+}
+
+twsContractDetails <-
 function(version=NULL,
          contract=do.call('twsContract',rep(list(NULL),13)),
          marketName=NULL,
@@ -49,7 +84,6 @@ function(version=NULL,
                  tradingClass=tradingClass,
                  conId=conId,
                  minTick=minTick,
-                 multiplier=multiplier,
                  orderTypes=orderTypes,
                  validExchanges=validExchanges,
                  priceMagnifier=priceMagnifier

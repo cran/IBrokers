@@ -1,10 +1,36 @@
-`reqHistoricalData` <-
-function(conn,Contract,endDateTime,
+reqHistoricalData <-
+function(Contract,endDateTime,
          barSize='1 day',duration='1 M',
          useRTH='1',whatToShow='TRADES',time.format='1',
          verbose=TRUE, tickerId='1',
          eventHistoricalData, file)
 {
+  if(is.twsConnection(Contract))
+    stop("no connection object is required for reqHistoricalData")
+  conn <- twsConnect(123456, blocking=TRUE) # need a blocking connection
+  if(!missing(endDateTime) && length(endDateTime) > 1) {
+    if(!timeBased(endDateTime))
+      stop("endDateTime length greater than 2 needs to be timeBased")
+    sleep <- 0
+    rHDargs <- list(conn=conn, Contract=Contract,
+                    barSize=barSize, duration=duration,
+                    useRTH=useRTH, whatToShow=whatToShow,
+                    time.format=time.format, verbose=verbose, tickerId=tickerId)
+    if(!missing(eventHistoricalData)) 
+      rHDargs$eventHistoricalData <- eventHistoricalData
+    if(!missing(file))
+      rHDargs$file <- file
+    x <- lapply(format(endDateTime,"%Y%m%d %H:%M:%S"),
+                function(eDT) {
+                  rHDargs$endDateTime <- eDT
+                  xx <- do.call('reqHistoricalData', rHDargs)
+                  Sys.sleep(6)
+                  return(xx)
+                })
+    x <- do.call('rbind.xts',x)
+    return(x[-which(duplicated(.index(x)))])
+  }
+    
   if(class(conn) != 'twsConnection') stop('tws connection object required')
   if(class(Contract) != 'twsContract') stop('twsContract required')
 
@@ -58,9 +84,7 @@ function(conn,Contract,endDateTime,
 #               '1 day','1 M','1',
 #               'TRADES','1')
 
-  for(i in 1:length(signals)) {
-    writeBin(signals[i],con)
-  }
+  writeBin(signals, con)
 
   waiting <- TRUE           # waiting for valid response?
   response <- character(0)  # currently read response
@@ -87,7 +111,7 @@ function(conn,Contract,endDateTime,
       if(curMsg == .twsIncomingMSG$ERR_MSG) {
         if(!errorHandler(con,verbose,OK=c(165,300,366,2104,2106,2107))) {
           cat('\n')
-          stop('Unable to complete historical data request')
+          stop('Unable to complete historical data request', call.=FALSE)
         }
       }
       # watch for historical data start
@@ -105,7 +129,8 @@ function(conn,Contract,endDateTime,
       }
     }
   }
-
+  cancelHistoricalData(con, as.character(tickerId))
+  on.exit()
   
   if(missing(eventHistoricalData)) {
     # the default: return an xts object
@@ -125,19 +150,23 @@ function(conn,Contract,endDateTime,
       invisible(return())
     }
 
-    x <- xts(matrix(as.numeric(cm[,-1]),nc=8),order.by=as.POSIXct(dts))
-    colnames(x) <- c('Open','High','Low','Close','Volume',
-                     'WAP','hasGaps','Count')
+    x <- xts(matrix(as.numeric(cm[,-1]),nc=8),order.by=structure(as.numeric(as.POSIXlt(dts), class=c("POSIXt", "POSIXct"))))
+    localsymbol <- reqContractDetails(conn, Contract)[[1]]$contract$local
+    colnames(x) <- paste(localsymbol, c('Open','High','Low','Close','Volume',
+                     'WAP','hasGaps','Count'), sep='.')
     xtsAttributes(x) <- list(from=req.from,to=req.to,
                              src='IB',updated=Sys.time())
+    close(conn)
     return(x)
   } else
   if(is.null(eventHistoricalData)) {
     # return raw TWS data including header
+    close(conn)
     return(c(header,response))
   } else {
     # pass to callback function
     FUN <- match.fun(eventHistoricalData)
+    close(conn)
     return(FUN(c(header,response)))
   }
   

@@ -1,8 +1,8 @@
 #####  TICK_PRICE ##### {{{
-`e_tick_price`    <- function(msg,string,timeStamp,file,...) {
+`e_tick_price`    <- function(msg,string,timeStamp,file,symbols,...) {
   tickType <- string[3]
   if(!is.null(timeStamp)) cat('<',as.character(timeStamp),'>',sep='',file=file,append=TRUE)
-  cat(" id=",string[2]," ",sep='',file=file,append=TRUE)
+  cat(" id=",string[2]," symbol=",symbols[as.numeric(string[2])]," ",sep='',file=file,append=TRUE)
   if(tickType == .twsTickType$BID) {
     cat('bidPrice:',string[4],' ',file=file,append=TRUE)
     cat('bidSize:',string[5],'\n',file=file,append=TRUE)
@@ -51,10 +51,10 @@
 }
 #####  END TICK_PRICE ##### }}}
 
-`e_tick_size`    <- function(msg,string,timeStamp,file,...) {
+`e_tick_size`    <- function(msg,string,timeStamp,file,symbols,...) {
   tickType <- string[3] 
   if(!is.null(timeStamp)) cat('<',as.character(timeStamp),'>',sep='',file=file,append=TRUE)
-  cat(" id=",string[2]," ",sep='',file=file,append=TRUE)
+  cat(" id=",string[2]," symbol=",symbols[as.numeric(string[2])]," ",sep='',file=file,append=TRUE)
   if(tickType == .twsTickType$BID_SIZE) {
     cat('bidSize:',string[4],'\n',file=file,append=TRUE)
   } else
@@ -87,10 +87,10 @@
   }
 }
 
-`e_tick_option`  <- function(msg,string,timeStamp,file,...) {
+`e_tick_option`  <- function(msg,string,timeStamp,file,symbols,...) {
   tickType <- string[3] 
   if(!is.null(timeStamp)) cat('<',as.character(timeStamp),'>',sep='',file=file,append=TRUE)
-  cat(" id=",string[2]," ",sep='',file=file,append=TRUE)
+  cat(" id=",string[2]," symbol=",symbols[as.numeric(string[2])]," ",sep='',file=file,append=TRUE)
   if(tickType == .twsTickType$BID_OPTION) { #10
     cat('bidOption:',string[4],string[5],'\n',file=file,append=TRUE)
   } else
@@ -101,25 +101,26 @@
     cat('lastOption:',string[4],string[5],'\n',file=file,append=TRUE)
   } else
   if(tickType == .twsTickType$MODEL_OPTION) { #13
-    cat('modelOption:',string[4],string[5],'\n',file=file,append=TRUE)
+    cat('modelOption: impVol: ',string[4],' delta:',string[5],
+        ' modelPrice: ',string[6],' pvDiv: ',string[7],'\n',file=file,append=TRUE)
   } else {
     cat('<default option> ',file=file,append=TRUE)
     cat(paste(string),'\n',file=file,append=TRUE)
   }
 }
 
-`e_tick_generic` <- function(msg,string,timeStamp,file,...) {
+`e_tick_generic` <- function(msg,string,timeStamp,file,symbols,...) {
   tickType <- string[3] 
   if(!is.null(timeStamp)) cat('<',as.character(timeStamp),'>',sep='',file=file,append=TRUE)
-  cat(" id=",string[2]," ",sep='',file=file,append=TRUE)
+  cat(" id=",string[2]," symbol=",symbols[as.numeric(string[2])]," ",sep='',file=file,append=TRUE)
   if(tickType == .twsTickType$OPTION_IMPLIED_VOL) { #24
-    cat('indexFuturePremium:',string[4],'\n',file=file,append=TRUE)
+    cat('optionImpliedVol:',string[4],'\n',file=file,append=TRUE)
   } else 
   if(tickType == .twsTickType$OPTION_HISTORICAL_VOL) { #23
     cat('optionHistoricalVol:',string[4],string[5],'\n',file=file,append=TRUE)
   } else
   if(tickType == .twsTickType$INDEX_FUTURE_PREMIUM) { #31
-    cat('optionImpliedVol:',string[4],string[5],'\n',file=file,append=TRUE)
+    cat('indexFuturePremium:',string[4],string[5],'\n',file=file,append=TRUE)
   } else
   if(tickType == .twsTickType$SHORTABLE) { #46
     cat('shortable:',string[4],'\n',file=file,append=TRUE)
@@ -129,27 +130,27 @@
   }
 }
 
-`e_tick_string`  <- function(msg,contents,timeStamp,file,...) {
-  tickType <- contents[3] 
+`e_tick_string`  <- function(msg,string,timeStamp,file,symbols,...) {
+  tickType <- string[3] 
   if(!is.null(timeStamp)) cat('<',as.character(timeStamp),'>',sep='',file=file,append=TRUE)
-  cat(" id=",contents[2]," ",sep='',file=file,append=TRUE)
+  cat(" id=",string[2]," symbol=",symbols[as.numeric(string[2])]," ",sep='',file=file,append=TRUE)
   if(tickType == .twsTickType$BID_EXCH) { #32
-    cat('bidExchange:',contents[4],'\n',file=file,append=TRUE)
+    cat('bidExchange:',string[4],'\n',file=file,append=TRUE)
   } else
   if(tickType == .twsTickType$ASK_EXCH) { #33
-    cat('askExchange:',contents[4],'\n',file=file,append=TRUE)
+    cat('askExchange:',string[4],'\n',file=file,append=TRUE)
   } else
   if(tickType == .twsTickType$LAST_TIMESTAMP) { #45
-    cat('lastTimestamp:',contents[4],'\n',file=file,append=TRUE)
+    cat('lastTimestamp:',string[4],'\n',file=file,append=TRUE)
   } else {
     cat('<default string> ',file=file,append=TRUE)
-    cat(paste(contents),'\n',file=file,append=TRUE)
+    cat(paste(string),'\n',file=file,append=TRUE)
   }
 }
 
-`e_tick_EFP`     <- function(msg,contents,timeStamp,file,...) {
+`e_tick_EFP`     <- function(msg,string,timeStamp,file,symbols,...) {
     cat('<default EFP> ',file=file,append=TRUE)
-    cat(paste(contents),'\n',file=file,append=TRUE)
+    cat(paste(string),'\n',file=file,append=TRUE)
 }
 
 ######################################################################
@@ -399,23 +400,25 @@ function(msg, contents, ...) {
   version          <- as.numeric(contents[1])
 
   contract         <- twsContract()
- #contract$conId   <- contents[2]  NOT YET IMPLEMETED IN IBrokers
+  contract$conId   <- contents[2]
   contract$symbol  <- contents[3]
   contract$sectype <- contents[4]
   contract$expiry  <- contents[5]
   contract$strike  <- contents[6]
   contract$right   <- contents[7]
-  contract$currency<- contents[8]
-  contract$local   <- contents[9]
+  contract$multiplier <- contents[8]
+  contract$primary <- contents[9]
+  contract$currency<- contents[10]
+  contract$local   <- contents[11]
   
   portfolioValue <- list()
-  portfolioValue$position      <- contents[10]
-  portfolioValue$marketPrice   <- contents[11]
-  portfolioValue$marketValue   <- contents[12]
-  portfolioValue$averageCost   <- contents[13]
-  portfolioValue$unrealizedPNL <- contents[14]
-  portfolioValue$realizedPNL   <- contents[15]
-  portfolioValue$accountName   <- contents[15]
+  portfolioValue$position      <- contents[12]
+  portfolioValue$marketPrice   <- contents[13]
+  portfolioValue$marketValue   <- contents[14]
+  portfolioValue$averageCost   <- contents[15]
+  portfolioValue$unrealizedPNL <- contents[16]
+  portfolioValue$realizedPNL   <- contents[17]
+  portfolioValue$accountName   <- contents[18]
 
   structure(list(contract       = contract,
                  portfolioValue = portfolioValue),

@@ -12,6 +12,9 @@ export(twsConnect,
        reqAccountUpdates,
 
        twsContract,
+       is.twsContract,
+       as.twsContract,
+
        twsCurrency,
        twsCASH,
        twsEquity,
@@ -35,7 +38,16 @@ export(twsConnect,
 
        twsOrder,
        placeOrder,
-       cancelOrder
+       cancelOrder,
+    
+       twsCALLBACK,
+       twsDEBUG,
+       processMsg,
+
+       eWrapper,
+
+       eWrapper.MktData.CSV,
+       eWrapper.MktDepth.CSV
       )
 
 export(.twsIncomingMSG,
@@ -46,5 +58,10 @@ export(.twsIncomingMSG,
       )
 
 S3method(print,twsConnection)
+S3method(close,twsConnection)
+
 S3method(print,twsContract)
+S3method(as.twsContract, twsContract)
+S3method(as.twsContract, twsContractDetails)
 S3method(print,twsContractDetails)
+
