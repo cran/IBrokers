@@ -41,6 +41,7 @@ twsCALLBACK <- function(twsCon, eWrapper, timestamp, file, playback=1, ...)
     p <- 0.001
     #dataCON <- get("DATACON", .GlobalEnv)[[1]]
     while(TRUE) {
+      socketSelect(list(con), FALSE, NULL)
       curMsg <- readBin(con, character(), 1)
       #curMsg2 <- readBin(con, character(), 1)
       if(length(curMsg) < 1) {
@@ -211,7 +212,7 @@ processMsg <- function(curMsg, con, eWrapper, timestamp, file, ...)
     eWrapper$deltaNeutralValidation(curMsg, msg, timestamp, file, ...)
   } else {
     # default handler/error
-    stop("unknown incoming message. reset connection", call.=FALSE)
+    warning(paste("Unknown incoming message: ",curMsg,". Please reset connection",sep=""), call.=FALSE)
   }
   # end of messages
 }
