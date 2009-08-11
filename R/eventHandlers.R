@@ -1,6 +1,8 @@
 #####  TICK_PRICE ##### {{{
 `e_tick_price`    <- function(msg,string,timeStamp,file,symbols,...) {
   tickType <- string[3]
+  id <- as.numeric(string[2])
+  file <- file[[id]]
   if(!is.null(timeStamp)) cat('<',as.character(timeStamp),'>',sep='',file=file,append=TRUE)
   cat(" id=",string[2]," symbol=",symbols[as.numeric(string[2])]," ",sep='',file=file,append=TRUE)
   if(tickType == .twsTickType$BID) {
@@ -53,6 +55,8 @@
 
 `e_tick_size`    <- function(msg,string,timeStamp,file,symbols,...) {
   tickType <- string[3] 
+  id <- as.numeric(string[2])
+  file <- file[[id]]
   if(!is.null(timeStamp)) cat('<',as.character(timeStamp),'>',sep='',file=file,append=TRUE)
   cat(" id=",string[2]," symbol=",symbols[as.numeric(string[2])]," ",sep='',file=file,append=TRUE)
   if(tickType == .twsTickType$BID_SIZE) {
@@ -89,6 +93,8 @@
 
 `e_tick_option`  <- function(msg,string,timeStamp,file,symbols,...) {
   tickType <- string[3] 
+  id <- as.numeric(string[2])
+  file <- file[[id]]
   if(!is.null(timeStamp)) cat('<',as.character(timeStamp),'>',sep='',file=file,append=TRUE)
   cat(" id=",string[2]," symbol=",symbols[as.numeric(string[2])]," ",sep='',file=file,append=TRUE)
   if(tickType == .twsTickType$BID_OPTION) { #10
@@ -111,6 +117,8 @@
 
 `e_tick_generic` <- function(msg,string,timeStamp,file,symbols,...) {
   tickType <- string[3] 
+  id <- as.numeric(string[2])
+  file <- file[[id]]
   if(!is.null(timeStamp)) cat('<',as.character(timeStamp),'>',sep='',file=file,append=TRUE)
   cat(" id=",string[2]," symbol=",symbols[as.numeric(string[2])]," ",sep='',file=file,append=TRUE)
   if(tickType == .twsTickType$OPTION_IMPLIED_VOL) { #24
@@ -132,6 +140,8 @@
 
 `e_tick_string`  <- function(msg,string,timeStamp,file,symbols,...) {
   tickType <- string[3] 
+  id <- as.numeric(string[2])
+  file <- file[[id]]
   if(!is.null(timeStamp)) cat('<',as.character(timeStamp),'>',sep='',file=file,append=TRUE)
   cat(" id=",string[2]," symbol=",symbols[as.numeric(string[2])]," ",sep='',file=file,append=TRUE)
   if(tickType == .twsTickType$BID_EXCH) { #32
@@ -149,6 +159,7 @@
 }
 
 `e_tick_EFP`     <- function(msg,string,timeStamp,file,symbols,...) {
+file <- file[[1]]  # FIXME
     cat('<default EFP> ',file=file,append=TRUE)
     cat(paste(string),'\n',file=file,append=TRUE)
 }
@@ -160,8 +171,9 @@
 ######################################################################
 
 `e_update_mkt_depth` <-  function(msg,contents,timeStamp,file,...) {
+  id <- as.numeric(contents[2])
+  file <- file[[id]]
   if(!is.null(timeStamp)) cat('<',as.character(timeStamp),'>,',sep='',file=file,append=TRUE)
-  id <- contents[2]
   position <- contents[3]
   operation <- switch(contents[4],
                       '0' = 'insert',
@@ -180,8 +192,10 @@
 }
 
 `e_update_mkt_depthL2` <-  function(msg,contents,timeStamp,file,...) {
-  if(!is.null(timeStamp)) cat('<',as.character(timeStamp),'>,',sep='',file=file,append=TRUE)
   id <- contents[2]
+  if(!is.null(timeStamp)) cat('<',as.character(timeStamp),'>,',sep='',file=file,append=TRUE)
+  id <- as.numeric(contents[2])
+  file <- file[[id]]
   position <- contents[3]
   marketMaker <- contents[4]
   operation <- switch(contents[5],
@@ -208,10 +222,15 @@
 #
 ######################################################################
 
-`e_real_time_bars` <- function(msg,contents,file=file,...) {
+`e_real_time_bars` <- function(curMsg, msg, symbols, file, ...) {
+  # msg[1] is VERSION
   columns <- c("Id","time","open","high","low","close","volume",
                "wap","count")
-  cat(paste(columns,"=",contents[-1],sep=""),'\n',file=file,append=TRUE)
+  id <- as.numeric(msg[2])
+  file <- file[[id]]
+  msg[2] <- symbols[as.numeric(msg[2])]
+  msg[3] <- strftime(structure(as.numeric(msg[3]), class=c("POSIXt","POSIXct")))
+  cat(paste(columns,"=",msg[-1],sep=""),'\n',file=file,append=TRUE)
 }
 
 
@@ -284,17 +303,17 @@
                              faProfile     = contents[33],
                              goodTillDate  = contents[34],
                              rule80A       = contents[35],
-                             settlingFirm  = contents[36],
-                             shortSaleSlot = contents[37],
-                             designatedLocation = contents[38],
-                             auctionStrategy = contents[39],
-                             startingPrice = contents[40],
-                             stockRefPrice = contents[41],
-                             delta         = contents[42],
-                             stockRangeLower = contents[43],
-                             stockRangeUpper = contents[44],
-                             displaySize   = contents[45],
-                             # rthOnly (version 18) = contents[46],
+                             percentOffset = contents[36],
+                             settlingFirm  = contents[37],
+                             shortSaleSlot = contents[38],
+                             designatedLocation = contents[39],
+                             auctionStrategy = contents[40],
+                             startingPrice = contents[41],
+                             stockRefPrice = contents[42],
+                             delta         = contents[43],
+                             stockRangeLower = contents[44],
+                             stockRangeUpper = contents[45],
+                             displaySize   = contents[46],
                              blockOrder    = contents[47],
                              sweepToFill   = contents[48],
                              allOrNone     = contents[49],
@@ -315,24 +334,27 @@
                              basisPoints        = contents[64],
                              basisPointsType    = contents[65],
                              # part of contract #66
-                             scaleNumComponents = contents[67],
-                             scaleComponentSize = contents[68],
+                             scaleInitLevelSize = contents[67],
+                             scaleSubsLevelSize = contents[68],
                              scalePriceIncrement = contents[69],
                              clearingAccount = contents[70],
                              clearingIntent  = contents[71],
-                             whatIf          = contents[72],
+                             notHeld         = contents[72],
+                             # this contingent on UnderComp Not Yet Available in IBrokers [74+]
+                             # algoStrategy [75+]
+                             whatIf          = contents[75]
                            ),
 
               orderstate = twsOrderState(
-                             status      = contents[73],
-                             initMargin  = contents[74],
-                             maintMargin = contents[75],
-                             equityWithLoan = contents[76],
-                             commission  = contents[77],
-                             minCommission = contents[78],
-                             maxCommission = contents[79],
-                             commissionCurrency = contents[80],
-                             warningText = contents[81]
+                             status      = contents[76],
+                             initMargin  = contents[77],
+                             maintMargin = contents[78],
+                             equityWithLoan = contents[79],
+                             commission  = contents[80],
+                             minCommission = contents[81],
+                             maxCommission = contents[82],
+                             commissionCurrency = contents[83],
+                             warningText = contents[84]
                            )
          )
   structure(eoo, class='eventOpenOrder')

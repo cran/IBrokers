@@ -22,38 +22,36 @@ twsCALLBACK <- function(twsCon, eWrapper, timestamp, file, playback=1, ...)
   if(inherits(twsCon, 'twsPlayback')) {
     sys.time <- NULL
     while(TRUE) {
-      last.time <- sys.time
-      sys.time <- as.POSIXct(strptime(paste(readBin(con, character(), 2), collapse=' '), timestamp))
-      if(!is.null(last.time)) {
-        Sys.sleep((sys.time-last.time)*playback)
-      }
-      curMsg <- readBin(con, character(), 1)
-      if(length(curMsg) < 1)
-        next
       if(!is.null(timestamp)) {
+        # MktData
+        last.time <- sys.time
+        sys.time <- as.POSIXct(strptime(paste(readBin(con, character(), 2), collapse=' '), timestamp))
+        if(!is.null(last.time)) {
+          Sys.sleep((sys.time-last.time)*playback)
+        }
+        curMsg <- readBin(con, character(), 1)
+        if(length(curMsg) < 1)
+          next
         processMsg(curMsg, con, eWrapper, format(sys.time, timestamp), file, ...)
       } else {
+        # RealTimeBars
+        curMsg <- readBin(con, character(), 1)
+        if(length(curMsg) < 1)
+          next
         processMsg(curMsg, con, eWrapper, timestamp, file, ...)
+        if(curMsg == .twsIncomingMSG$REAL_TIME_BARS) Sys.sleep(5 * playback)
       }
     }
   } 
   else { 
-    p <- 0.001
     #dataCON <- get("DATACON", .GlobalEnv)[[1]]
     while(TRUE) {
       socketSelect(list(con), FALSE, NULL)
       curMsg <- readBin(con, character(), 1)
-      #curMsg2 <- readBin(con, character(), 1)
-      if(length(curMsg) < 1) {
-        p <- min(p*1.01, 0.01)
-        Sys.sleep(p)
+      if(!is.null(timestamp)) {
+        processMsg(curMsg, con, eWrapper, format(Sys.time(), timestamp), file, ...)
       } else {
-        p <- 0.001
-        if(!is.null(timestamp)) {
-          processMsg(curMsg, con, eWrapper, format(Sys.time(), timestamp), file, ...)
-        } else {
-          processMsg(curMsg, con, eWrapper, timestamp, file, ...)
-        }
+        processMsg(curMsg, con, eWrapper, timestamp, file, ...)
       }
       # data processing
       # depending on the data provider, processMsg will be replaced with the message processing
@@ -90,9 +88,10 @@ processMsg <- function(curMsg, con, eWrapper, timestamp, file, ...)
   } else
   if(curMsg == .twsIncomingMSG$ERR_MSG) {
     msg <- readBin(con, character(), 4)
+    eWrapper$errorMessage(curMsg, msg, timestamp, file, ...)
   } else
   if(curMsg == .twsIncomingMSG$OPEN_ORDER) {
-    msg <- readBin(con, character(), 78)
+    msg <- readBin(con, character(), 84)
     eWrapper$openOrder(curMsg, msg, timestamp, file, ...)
   } else
   if(curMsg == .twsIncomingMSG$ACCT_VALUE) {
@@ -112,14 +111,12 @@ processMsg <- function(curMsg, con, eWrapper, timestamp, file, ...)
     eWrapper$nextValidId(curMsg, msg, timestamp, file, ...)
   } else
   if(curMsg == .twsIncomingMSG$CONTRACT_DATA) {
-    msg <- readBin(con, character(), 17)
-    if(msg[1] > 4)
-      msg <- c(msg, readBin(con, character(), 2)) # makes up for id, and underConId
-    eWrapper$contractData(curMsg, msg, timestamp, file, ...)
+    msg <- readBin(con, character(), 21)
+    eWrapper$contractDetails(curMsg, msg, timestamp, file, ...)
   } else
   if(curMsg == .twsIncomingMSG$EXECUTION_DATA) {
     msg <- readBin(con, character(), 21)
-    eWrapper$execData(curMsg, msg, timestamp, file, ...)
+    eWrapper$execDetails(curMsg, msg, timestamp, file, ...)
   } else
   if(curMsg == .twsIncomingMSG$MARKET_DEPTH) {
     msg <- readBin(con, character(), 7)
@@ -150,7 +147,7 @@ processMsg <- function(curMsg, con, eWrapper, timestamp, file, ...)
   } else
   if(curMsg == .twsIncomingMSG$BOND_CONTRACT_DATA) {
     stop("unimplemented as of yet")
-    eWrapper$bondContractData(curMsg, msg, timestamp, file, ...)
+    eWrapper$bondContractDetails(curMsg, msg, timestamp, file, ...)
   } else
   if(curMsg == .twsIncomingMSG$SCANNER_PARAMETERS) {
     stop("unimplemented as of yet")
@@ -193,7 +190,7 @@ processMsg <- function(curMsg, con, eWrapper, timestamp, file, ...)
   } else
   if(curMsg == .twsIncomingMSG$CONTRACT_DATA_END) {
     msg <- readBin(con, character(), 2)
-    eWrapper$contractDataEnd(curMsg, msg, timestamp, file, ...)
+    eWrapper$contractDetailsEnd(curMsg, msg, timestamp, file, ...)
   } else
   if(curMsg == .twsIncomingMSG$OPEN_ORDER_END) {
     msg <- readBin(con, character(), 1)
@@ -210,6 +207,10 @@ processMsg <- function(curMsg, con, eWrapper, timestamp, file, ...)
   if(curMsg == .twsIncomingMSG$DELTA_NEUTRAL_VALIDATION) {
     msg <- readBin(con, character(), 5)
     eWrapper$deltaNeutralValidation(curMsg, msg, timestamp, file, ...)
+  } else
+  if(curMsg == .twsIncomingMSG$TICK_SNAPSHOT_END) {
+    msg <- readBin(con, character(), 2)
+    eWrapper$tickSnapshotEnd(curMsg, msg, timestamp, file, ...)
   } else {
     # default handler/error
     warning(paste("Unknown incoming message: ",curMsg,". Please reset connection",sep=""), call.=FALSE)

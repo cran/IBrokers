@@ -1,5 +1,4 @@
-`reqIds` <-
-function (conn, numIds=1) 
+.reqIds <- function(conn, numIds=1)
 {
   if (!inherits(conn, "twsConnection")) 
     stop("requires twsConnection object")
@@ -9,15 +8,20 @@ function (conn, numIds=1)
   writeBin(.twsOutgoingMSG$REQ_IDS, con)
   writeBin(VERSION, con)
   writeBin(as.character(numIds), con)
+}
 
+reqIds <- function(conn, numIds=1)
+{
+  .reqIds(conn, numIds)
+
+  con <- conn[[1]]
   e_next_id <- eWrapper()
-  e_next_id$nextValidId <- function(msg, timestamp, file, ...) { msg[2] }
-
+  e_next_id$nextValidId <- function(curMsg, msg, timestamp, file, ...) { msg[2] }
 
   while(TRUE) {
+    socketSelect(list(con), FALSE, NULL)
     curMsg <- readBin(con, character(), 1)
-    if(length(curMsg) < 1)
-      next
+
     nextValidID <- processMsg(curMsg,
                               con,
                               eWrapper=e_next_id,
@@ -25,15 +29,6 @@ function (conn, numIds=1)
     if(curMsg == .twsIncomingMSG$NEXT_VALID_ID)
       break
   }
-
   return(nextValidID)
-#  while (waiting) {
-#    curChar <- readBin(con, character(), 1)
-#    if (curChar == .twsIncomingMSG$NEXT_VALID_ID) {
-#        nextId <- readBin(con, character(), 2)[2]
-#        waiting <- FALSE
-#    }
-#  }
-#  return(nextId)
 }
 

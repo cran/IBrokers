@@ -1,13 +1,53 @@
-eWrapper.MktData.CSV <- function() {
-  # internally updated data
-  .data. <- character(8)
-  
-  get.data <- function() return(.data.)
+eWrapper.RealTimeBars.CSV <- function(n=1) {
+  eW <- eWrapper(NULL)
+  eW$assign.Data("data", 
+                 rep(list(structure(.xts(matrix(rep(NA_real_,7),nc=7),0),
+                                    .Dimnames=list(NULL,
+                                                  c("Open","High",
+                                                    "Low","Close",
+                                                    "Volume","WAP","Count")))),n))
 
-  tickPrice <- function(curMsg, msg, timestamp, file, ...) 
+  eW$realtimeBars <- function(curMsg, msg, timestamp, file, ...)
+  {
+    id <- as.numeric(msg[2])
+    file <- file[[id]]
+    data <- eW$get.Data("data")
+    attr(data[[id]], "index") <- as.numeric(msg[3])
+    nr.data <- NROW(data[[id]])
+    cat(paste(msg[3],  # timestamp in POSIXct
+              msg[4],  # Open
+              msg[5],  # High
+              msg[6],  # Low
+              msg[7],  # Close
+              msg[8],  # Volume
+              msg[9],  # WAP
+              msg[10], # Count
+              sep=","), "\n", file=file, append=TRUE)
+    data[[id]][nr.data,1:7] <- as.numeric(msg[4:10])
+    eW$assign.Data("data", data)
+    c(curMsg, msg)
+  }
+  return(eW)
+}
+
+eWrapper.MktData.CSV <- function(n=1) {
+  eW <- eWrapper(NULL)  # use basic template
+  eW$assign.Data("data", rep(list(structure(.xts(matrix(rep(NA_real_,7),nc=7),0),
+                                      .Dimnames=list(NULL,
+                                                     c("BidSize","BidPrice",
+                                                       "AskPrice","AskSize",
+                                                       "Last","LastSize","Volume")))),n))
+
+  eW$tickPrice <- function(curMsg, msg, timestamp, file, ...) 
   {
     tickType = msg[3]
-    .data.[1] <<- timestamp
+    msg <- as.numeric(msg)
+    id <- as.numeric(msg[2])
+    file <- file[[id]]
+    data <- eW$get.Data("data") #[[1]]  # list position of symbol (by id == msg[2])
+    attr(data[[id]], "index") <- as.numeric(Sys.time())
+    nr.data <- NROW(data[[id]])
+    #data[[id]][1] <- timestamp
     if(tickType == .twsTickType$BID) {
       cat(paste(timestamp,
                 msg[5], #bidSize
@@ -18,7 +58,7 @@ eWrapper.MktData.CSV <- function() {
                 "",     #lastSize
                 "",     #Volume
                 sep=","), "\n", file=file, append=TRUE)
-      .data.[2:3] <<- msg[5:4]
+      data[[id]][nr.data,1:2] <- msg[5:4]
     } else
     if(tickType == .twsTickType$ASK) {
       cat(paste(timestamp,
@@ -30,7 +70,7 @@ eWrapper.MktData.CSV <- function() {
                 "",     #lastSize
                 "",     #Volume
                 sep=","), "\n", file=file, append=TRUE)
-      .data.[4:5] <<- msg[4:5]
+      data[[id]][nr.data,3:4] <- msg[4:5]
     } else
     if(tickType == .twsTickType$LAST) {
       cat(paste(timestamp,
@@ -42,13 +82,22 @@ eWrapper.MktData.CSV <- function() {
                 "",     #lastSize
                 "",     #Volume
                 sep=","), "\n", file=file, append=TRUE)
-      .data.[6] <<- msg[4]
+      data[[id]][nr.data,5] <- msg[4]
     }
+    #data[[as.numeric(msg[2])]] <- data
+    eW$assign.Data("data", data)
+    c(curMsg, msg)
   }
-  tickSize  <- function(curMsg, msg, timestamp, file, ...) 
+  eW$tickSize  <- function(curMsg, msg, timestamp, file, ...) 
   { 
+    data <- eW$get.Data("data")
     tickType = msg[3]
-    .data.[1] <<- timestamp
+    msg <- as.numeric(msg)
+    id <- as.numeric(msg[2])
+    file <- file[[id]]
+    attr(data[[id]], "index") <- as.numeric(Sys.time())
+    nr.data <- NROW(data[[id]])
+    #data[[id]][1] <- timestamp
     if(tickType == .twsTickType$BID_SIZE) {
       cat(paste(timestamp,
                 msg[4], #bidSize
@@ -59,7 +108,7 @@ eWrapper.MktData.CSV <- function() {
                 "",     #lastSize
                 "",     #Volume
                 sep=","), "\n", file=file, append=TRUE)
-      .data.[2] <<- msg[4]
+      data[[id]][nr.data,1] <- msg[4]
     } else
     if(tickType == .twsTickType$ASK_SIZE) {
       cat(paste(timestamp,
@@ -71,7 +120,7 @@ eWrapper.MktData.CSV <- function() {
                 "",     #lastSize
                 "",     #Volume
                 sep=","), "\n", file=file, append=TRUE)
-      .data.[5] <<- msg[4]
+      data[[id]][nr.data,4] <- msg[4]
     } else 
     if(tickType == .twsTickType$LAST_SIZE) {
       cat(paste(timestamp,
@@ -83,7 +132,7 @@ eWrapper.MktData.CSV <- function() {
                 msg[4], #lastSize
                 "",     #Volume
                 sep=","), "\n", file=file, append=TRUE)
-      .data.[7] <<- msg[4]
+      data[[id]][nr.data,6] <- msg[4]
     } else
     if(tickType == .twsTickType$VOLUME) {
       cat(paste(timestamp,
@@ -95,53 +144,11 @@ eWrapper.MktData.CSV <- function() {
                 "",     #lastSize
                 msg[4], #Volume
                 sep=","), "\n", file=file, append=TRUE)
-      .data.[8] <<- msg[4]
+      data[[id]][nr.data,7] <- msg[4]
     }
+    eW$assign.Data("data", data)
+    c(curMsg, msg) # processMsg sees this raw vector
   }
-  # unimplemented for export to CSV
-  tickOptionComputation <- tickGeneric  <- 
-  tickString <- tickEFP  <- orderStatus <- 
-  openOrder  <- openOrderEnd <- updateAccountValue  <-
-  updatePortfolio <- updateAccountTime  <- accountDownloadEnd  <-
-  nextValidId  <- contractDetails  <- bondContractDetails  <- 
-  contractDetailsEnd  <- execDetails  <- updateMktDepth  <- 
-  updateMktDepthL2  <- updateNewsBulletin  <- managedAccounts  <-
-  receiveFA  <- historicalData  <- scannerParameters  <-
-  scannerData  <- scannerDataEnd  <- realtimeBars  <-
-  currentTime  <- fundamentalData  <-
-  deltaNeutralValidation  <- function(curMsg, msg, timestamp, file, ...) { }
 
-  return(list(
-  get.data = get.data,
-  tickPrice =  tickPrice ,
-  tickSize  =  tickSize  ,
-  tickOptionComputation =  tickOptionComputation ,
-  tickGeneric  =  tickGeneric  ,
-  tickString =  tickString ,
-  tickEFP  =  tickEFP  ,
-  orderStatus =  orderStatus ,
-  openOrder  =  openOrder  ,
-  openOrderEnd =  openOrderEnd ,
-  updateAccountValue  =  updateAccountValue  ,
-  updatePortfolio =  updatePortfolio ,
-  updateAccountTime  =  updateAccountTime  ,
-  accountDownloadEnd  =  accountDownloadEnd  ,
-  nextValidId  =  nextValidId  ,
-  contractDetails  =  contractDetails  ,
-  bondContractDetails  =  bondContractDetails  ,
-  contractDetailsEnd  =  contractDetailsEnd  ,
-  execDetails  =  execDetails  ,
-  updateMktDepth  =  updateMktDepth  ,
-  updateMktDepthL2  =  updateMktDepthL2  ,
-  updateNewsBulletin  =  updateNewsBulletin  ,
-  managedAccounts  =  managedAccounts  ,
-  receiveFA  =  receiveFA  ,
-  historicalData  =  historicalData  ,
-  scannerParameters  =  scannerParameters  ,
-  scannerData  =  scannerData  ,
-  scannerDataEnd  =  scannerDataEnd  ,
-  realtimeBars  =  realtimeBars  ,
-  currentTime  =  currentTime  ,
-  fundamentalData  =  fundamentalData  ,
-  deltaNeutralValidation  =  deltaNeutralValidation))
+  return(eW)
 }

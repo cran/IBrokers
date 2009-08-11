@@ -1,7 +1,52 @@
-`reqRealTimeBars` <-
+.reqRealTimeBars <- function(conn, Contract,
+          whatToShow="TRADES",
+          barSize="5",useRTH=TRUE,
+          tickerId = "1")
+{
+  if(!inherits(conn,"twsConnection") )
+    stop("tws connection object required")
+  if(inherits(Contract,"twsContract")) 
+    Contract <- list(Contract)
+
+  for(n in 1:length(Contract)) {
+    if(!inherits(Contract[[n]],"twsContract") )
+       stop("twsContract required")
+  }
+  con <- conn[[1]]
+  if(!isOpen(con)) 
+    stop("connection to TWS has been closed")
+
+ 
+  VERSION <- "1"
+  if(length(tickerId) != length(Contract))
+    tickerId <- seq(as.numeric(tickerId), length.out=length(Contract))
+
+  ticker_id <- as.character(tickerId)
+
+  for(n in 1:length(Contract)) {
+    request <- c(.twsOutgoingMSG$REQ_REAL_TIME_BARS, VERSION, ticker_id[n], 
+        Contract[[n]]$symbol,
+        Contract[[n]]$sectype,
+        Contract[[n]]$expiry,
+        Contract[[n]]$strike, 
+        Contract[[n]]$right,
+        Contract[[n]]$multiplier,
+        Contract[[n]]$exch, 
+        Contract[[n]]$primary, 
+        Contract[[n]]$currency,
+        Contract[[n]]$local,barSize,whatToShow,
+        as.character(as.numeric(useRTH)))
+    writeBin(request, con)
+#    ticker_id <- as.character(as.numeric(tickerId))
+#    ticker_ids[n] <- ticker_id
+  }
+  ticker_id
+}
+
+reqRealTimeBars <-
 function (conn, Contract,
           whatToShow="TRADES",
-          barSize="5",useRTH="1",
+          barSize="5",useRTH=TRUE,
           playback = 1,
           tickerId = "1",
           file = "",
@@ -10,24 +55,14 @@ function (conn, Contract,
           CALLBACK=twsCALLBACK,
           ...)
 {
-    if (!inherits(conn,"twsConnection") )
-        stop("tws connection object required")
-
     if(!inherits(conn, "twsPlayback")) {
-      if (inherits(Contract,"twsContract")) 
-          Contract <- list(Contract)
-  
-      for (n in 1:length(Contract)) {
-          if (!inherits(Contract[[n]],"twsContract") )
-              stop("twsContract required")
-      }
+      tickerId <- .reqRealTimeBars(conn, Contract, whatToShow, barSize, useRTH, tickerId)
     }
 
+    if(inherits(Contract,"twsContract")) 
+      Contract <- list(Contract)
+
     con <- conn[[1]]
-    if (!isOpen(con)) 
-        stop("connection to TWS has been closed")
-
-
     cancelRealTimeBars <- function(con,tickerId) {
       if(inherits(con,'sockconn')) {
         for(i in 1:length(tickerId)) {
@@ -42,83 +77,35 @@ function (conn, Contract,
   
     if(is.null(CALLBACK))
       CALLBACK <- twsDEBUG # function to simply return raw data
- 
-    VERSION <- "1"
-    ticker_id <- as.character(tickerId)
-
-    if(inherits(con, 'sockconn')) {
-      #write to TWS connection 
-      for(n in 1:length(Contract)) {
-        signals <- c(.twsOutgoingMSG$REQ_REAL_TIME_BARS, VERSION, ticker_id, 
-            Contract[[n]]$symbol,
-            Contract[[n]]$sectype,
-            Contract[[n]]$expiry,
-            Contract[[n]]$strike, 
-            Contract[[n]]$right,
-            Contract[[n]]$multiplier,
-            Contract[[n]]$exch, 
-            Contract[[n]]$primary, 
-            Contract[[n]]$currency,
-            Contract[[n]]$local,barSize,whatToShow,useRTH)
-    
-        for (i in 1:length(signals)) {
-            writeBin(signals[i], con)
-        }
-        ticker_id <- as.character(as.numeric(tickerId) + n)
-      }
-      msg_expected_length <- NA
-    } else {
-      msg_expected_length <- as.numeric(readBin(con,character(), 1))
-    }
 
     if(!missing(CALLBACK) && is.na(list(CALLBACK))) {
       if(inherits(conn, 'twsPlayback')) {
         seek(conn[[1]], 0)
         stop("CALLBACK=NA is not available for playback")
       }
-      return(as.character(as.numeric(tickerId):length(Contract)))
+      return(tickerId)
     }
-    on.exit(cancelRealTimeBars(con, as.character(as.numeric(tickerId):length(Contract))))
+    on.exit(cancelRealTimeBars(con, tickerId))
+    
+    symbol.or.local <- function(x) {
+      # used to find best name for id in output
+      symbol <- x$symbol
+      local  <- x$local
+      if(local=="") {
+        return(symbol)
+      } else return(local)
+    }
+    eventWrapper$assign.Data("symbols", sapply(Contract, symbol.or.local))
+    # data is list of vectors TimeStamp, Open, High, Low, Close, Volume, VWAP, Count
+    # eventWrapper$assign.Data("data", rep(list(rep(NA, 8)), length(Contract)))
 
-    #waiting <- TRUE
-
-    #msg_position <- 0 # where we are in the message - only relevant for playback
-    #PLAYBACK <- ifelse(inherits(conn,'twsPlayback'), TRUE, FALSE)
     timeStamp <- NULL
-
+    if(!is.list(file))
+      file <- list(file)
+    if(length(file) != length(Contract))
+      file <- rep(file, length(Contract))
     CALLBACK(conn, eWrapper=eventWrapper, timestamp=timeStamp, file=file,
              playback=playback, ...)
-
-#    if( missing(CALLBACK) || is.null(CALLBACK)) {
-#      while (waiting) {
-#
-#          curMsg <- readBin(con, character(), 1)
-#          msg_position <- msg_position + 1
-#
-#
-#        #  if (length(curMsg) > 0) {
-#              if (curMsg == .twsIncomingMSG$ERR_MSG) {
-#                if (!errorHandler(con, verbose, OK = c(165, 300, 366, 2104,2106,2107))) {
-#                  cat("\n")
-#                  stop("Unable to complete market data request")
-#                }
-#                msg_position <- msg_position + 4
-#              }
-#              if( curMsg == .twsIncomingMSG$REAL_TIME_BARS) {
-#                contents <- readBin(con,character(),10)
-#                if(is.null(eventRealTimeBars)) {
-#                  cat(curMsg,paste(contents),'\n',file=file, append=TRUE)
-#                } else eventRealTimeBars(curMsg, contents, file=file)
-#                msg_position <- msg_position + 10
-#              }
-#          flush.console()
-#          if(PLAYBACK)
-#            Sys.sleep(as.numeric(barSize) * playback)
-#          if(!is.na(msg_expected_length) && msg_position == msg_expected_length) 
-#            waiting <- FALSE
-#        # }
-#      }
-#    } else CALLBACK(con,...)
 }
 
 `cancelRealTimeBars` <- function(conn,tickerId) {
