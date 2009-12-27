@@ -1,7 +1,10 @@
 .cancelOrder <- function(conn, orderId)
 {
-  if(!inherits(conn,'twsConnection'))
+  if(!is.twsConnection(conn))
     stop('requires twsConnection object')
+
+  if(missing(orderId))
+    stop('valid "orderId" required')
 
   con <- conn[[1]]
   VERSION <- "1"

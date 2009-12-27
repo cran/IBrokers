@@ -1,6 +1,11 @@
 .reqIds <- function(conn, numIds=1)
 {
-  if (!inherits(conn, "twsConnection")) 
+  if(inherits(conn, "twsconn")) {
+    id <- conn$nextValidId
+    conn$nextValidId <- as.character(as.numeric(id)+1L)
+    return(id)
+  }
+  if (!is.twsConnection(conn))
     stop("requires twsConnection object")
   con <- conn[[1]]
 
@@ -12,6 +17,11 @@
 
 reqIds <- function(conn, numIds=1)
 {
+  if(inherits(conn, "twsconn")) {
+    id <- conn$nextValidId
+    conn$nextValidId <- as.character(as.numeric(id)+1L)
+    return(id)
+  }
   .reqIds(conn, numIds)
 
   con <- conn[[1]]
