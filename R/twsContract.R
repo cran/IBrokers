@@ -4,7 +4,7 @@ function(conId,symbol,sectype,exch,primary,expiry,strike,
          comboleg,include_expired)
 {
   if(is.null(names(match.call()[-1])))
-    return(do.call("twsContract", rep(list(NULL), 13)))
+    return(do.call("twsContract", rep(list(NULL), 14)))
 
   structure(
             list(conId=conId,
@@ -43,6 +43,11 @@ is.twsContractDetails <- function(x)
 as.twsContract <- function(x, ...)
 {
   UseMethod("as.twsContract")
+}
+
+as.twsContract.list <- function(x, ...)
+{
+  lapply(x, as.twsContract, ...)
 }
 
 as.twsContract.twsContract <- function(x, ...)
