@@ -1,6 +1,7 @@
 \name{IBrokers-package}
 \alias{IBrokers-package}
 \alias{IBrokers}
+\alias{IBrokersRef}
 \docType{package}
 \title{
 R API to the Interactive Brokers Trader Workstation (TWS).
@@ -58,8 +59,8 @@ a viable alternative for IB-API interaction.  Don't be shy.
 \tabular{ll}{
 Package: \tab IBrokers\cr
 Type: \tab Package\cr
-Version: \tab 0.2-4\cr
-Date: \tab 2009-08-11\cr
+Version: \tab 0.2-9\cr
+Date: \tab 2010-09-05\cr
 License: \tab GPL-3\cr
 }
 The current API methods supported are:
@@ -93,6 +94,8 @@ Interactive Brokers: \url{www.interactivebrokers.com}
 \keyword{ package }
 \examples{
 \dontrun{
+IBrokersRef()       # IBrokers Reference Card in PDF viewer
+
 tws <- twsConnect() # make a new connection to the TWS
 reqCurrentTime(tws) # check the server's timestamp
 
