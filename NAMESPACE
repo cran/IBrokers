@@ -1,5 +1,6 @@
 export(twsConnect,
        twsConnect2,             # experimental connection object
+       ibgConnect,
        twsDisconnect,
 
        is.twsConnection,
@@ -18,12 +19,17 @@ export(twsConnect,
       .reqAccountUpdates,       # send only
        reqAccountUpdates,
 
+       twsPortfolioValue,
+
        twsExecutionFilter,
        reqExecutions,
 
        twsContract,
        is.twsContract,
        as.twsContract,
+
+       twsBAG,
+       twsComboLeg,
 
        twsCurrency,
        twsCASH,
@@ -88,4 +94,10 @@ S3method(as.twsContract, list)
 S3method(as.twsContract, twsContract)
 S3method(as.twsContract, twsContractDetails)
 S3method(print,twsContractDetails)
+
+S3method(print,eventPortfolioValue)
+S3method(print,eventAccountValue)
+
+S3method(twsPortfolioValue, eWrapper)
+S3method(twsPortfolioValue, AccountUpdate)
 

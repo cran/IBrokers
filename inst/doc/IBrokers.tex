@@ -11,6 +11,7 @@
 \author{Jeffrey A. Ryan}
 \date{\today}
 
+\usepackage{Sweave}
 \begin{document}
 
 \maketitle
@@ -161,24 +162,16 @@ against a single TWS instance though, and in that case would require
 distinct clientId values.
 If no further queries are required, {\tt twsDisconnect} will disconnect
 the R session from the TWS.
-<<twsconnect, eval=FALSE>>=
-library(IBrokers)
-tws <- twsConnect()
-tws
-reqCurrentTime(tws)
-serverVersion(tws)
-twsDisconnect(tws)
-@
-<<twsconnect, eval=TRUE, echo=FALSE>>=
-if(Sys.getenv("IBCON")=="1") {
-library(IBrokers)
-tws <- twsConnect(999, port=Sys.getenv("IBPORT"))
-tws
-reqCurrentTime(tws)
-serverVersion(tws)
-twsDisconnect(tws)
-}
-@
+\begin{Schunk}
+\begin{Sinput}
+> library(IBrokers)
+> tws <- twsConnect()
+> tws
+> reqCurrentTime(tws)
+> serverVersion(tws)
+> twsDisconnect(tws)
+\end{Sinput}
+\end{Schunk}
 
 \subsection{Getting data from the TWS}
 The current IBrokers implementation is focused on
@@ -213,27 +206,18 @@ includes:
 Using the above functions to request market data from the TWS
 is quite straightforward.
 
-<<reqmktdata, eval=FALSE>>=
-tws <- twsConnect()
-twsFuture("YM","ECBOT","200809")
-reqContractDetails(tws, twsEquity("QQQQ"))
-@
-<<reqmktdata, eval=TRUE, echo=FALSE>>=
-if(Sys.getenv("IBCON")=="1") {
-tws <- twsConnect(999, port=Sys.getenv("IBPORT"))
-twsFuture("YM","ECBOT","200809")
-reqContractDetails(tws, twsEquity("QQQQ"))
-}
-@
-<<reqmktdata2, eval=FALSE>>=
-reqMktData(tws, twsEquity("QQQQ"))
-@
-<<reqmktdata3, eval=TRUE, echo=FALSE>>=
-if(Sys.getenv("IBCON")=="1") {
-IBrokers:::.reqMktData.vignette(tws, twsEquity("QQQQ"))
-twsDisconnect(tws)
-}
-@
+\begin{Schunk}
+\begin{Sinput}
+> tws <- twsConnect()
+> twsFuture("YM", "ECBOT", "200809")
+> reqContractDetails(tws, twsEquity("QQQQ"))
+\end{Sinput}
+\end{Schunk}
+\begin{Schunk}
+\begin{Sinput}
+> reqMktData(tws, twsEquity("QQQQ"))
+\end{Sinput}
+\end{Schunk}
 
 Unique again to the IBrokers implementation is the
 use of \emph{passed} callback handlers to the data functions. These are
@@ -255,34 +239,19 @@ This value is multiplied by the difference in time between
 original message timestamps, increasing the value will slow the
 playback and decreasing toward 0 will speed up the playback.
 
-<<playbackmktdata, eval=FALSE>>=
-reqMktData(tws, twsEquity("SBUX"), CALLBACK=NULL, file="SBUX.dat")
-twsp <- twsConnect(filename="SBUX.dat")
-@
-<<playbackmktdata, eval=TRUE, echo=FALSE>>=
-if(Sys.getenv("IBCON")=="1") {
-tws <- twsConnect(999, port=Sys.getenv("IBPORT"))
-IBrokers:::.reqMktData.vignette(tws, twsEquity("SBUX"), CALLBACK=NULL, file="SBUX.dat")
-twsDisconnect(tws)
-twsp <- twsConnect(filename="SBUX.dat")
-}
-@
+\begin{Schunk}
+\begin{Sinput}
+> reqMktData(tws, twsEquity("SBUX"), CALLBACK = NULL, file = "SBUX.dat")
+> twsp <- twsConnect(filename = "SBUX.dat")
+\end{Sinput}
+\end{Schunk}
 To playback the saved data, call {\tt reqMktData} again:
-<<playback, eval=FALSE>>=
-reqMktData(twsp)
-reqMktData(twsp, playback=0)
-@
-<<playback, eval=TRUE, echo=FALSE>>=
-if(Sys.getenv("IBCON")=="1") {
-reqMktData(twsp)
-reqMktData(twsp, playback=0)
-}
-@
-<<closeplayback, eval=TRUE,echo=FALSE>>=
-if(Sys.getenv("IBCON")=="1") {
-twsDisconnect(twsp)
-}
-@
+\begin{Schunk}
+\begin{Sinput}
+> reqMktData(twsp)
+> reqMktData(twsp, playback = 0)
+\end{Sinput}
+\end{Schunk}
 
 Each data function has special callback methods
 associated with the expected results. These are documented

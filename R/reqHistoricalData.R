@@ -97,10 +97,9 @@ function(conn, Contract,endDateTime,
     flush.console()
   }
 
-  if(.Platform$OS.type == 'windows') Sys.sleep(.1)
-
   while(waiting) {
-    curMsg <- suppressWarnings(readBin(con,character(),1))
+    socketSelect(list(con), FALSE, NULL)
+    curMsg <- readBin(con,character(),1)
     if(verbose) {
       cat('.')
       if(iter %% 30 == 0) cat('\n')
@@ -113,8 +112,10 @@ function(conn, Contract,endDateTime,
       # watch for error messages
       if(curMsg == .twsIncomingMSG$ERR_MSG) {
         if(!errorHandler(con,verbose,OK=c(165,300,366,2104,2106,2107))) {
-          cat('\n')
-          stop('Unable to complete historical data request', call.=FALSE)
+          #cat('\n')
+          #stop('Unable to complete historical data request', call.=FALSE)
+          on.exit()
+          invisible(return())
         }
       }
       # watch for historical data start
@@ -152,7 +153,7 @@ function(conn, Contract,endDateTime,
       invisible(return())
     }
 
-    x <- xts(matrix(as.numeric(cm[,-1]),nc=8),order.by=structure(as.numeric(as.POSIXlt(dts), class=c("POSIXt", "POSIXct"))))
+    x <- xts(matrix(as.numeric(cm[,-1]),nc=8),order.by=structure(as.numeric(as.POSIXlt(dts)), class=c("POSIXt", "POSIXct")))
     localsymbol <- reqContractDetails(conn, Contract)[[1]]$contract$local
     colnames(x) <- paste(localsymbol, c('Open','High','Low','Close','Volume',
                      'WAP','hasGaps','Count'), sep='.')
