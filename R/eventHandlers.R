@@ -108,7 +108,9 @@
   } else
   if(tickType == .twsTickType$MODEL_OPTION) { #13
     cat('modelOption: impVol: ',string[4],' delta:',string[5],
-        ' modelPrice: ',string[6],' pvDiv: ',string[7],'\n',file=file,append=TRUE)
+        ' modelPrice: ',string[6],' pvDiv: ',string[7],
+        ' gamma: ',string[8],' vega: ',string[9],
+        ' theta: ',string[10],' undPrice: ',string[11],'\n',file=file,append=TRUE)
   } else {
     cat('<default option> ',file=file,append=TRUE)
     cat(paste(string),'\n',file=file,append=TRUE)
@@ -490,3 +492,27 @@ function(curMsg, msg, ...) {
   p
 }
 ##### END ACCOUNT_DATA #### }}}
+
+e_scannerData <- function(curMsg, reqId, rank, contract,
+                          distance, benchmark, projection, legsStr) {
+  con <- contract$contract
+  cat("id=",reqId,
+      " rank=",rank,
+      " symbol=",con$symbol,
+      " expiry=",con$expiry,
+      " strike=",con$strike,
+      " right=",con$right,
+      " exchange=",con$exch,
+      " currency=",con$currency,
+      " local=",con$local,
+      " marketName=",contract$marketName,
+      " tradingClass=",contract$tradingClass,
+      " distance=",distance,
+      " benchmark=",benchmark,
+      " projection=",projection,
+      " legsStr=",legsStr,"\n")
+}
+
+e_fundamentalData <- function(curMsg, msg) {
+  cat( paste("id=",msg[2]," len=",nchar(msg[3]),"\n",msg[3], sep="") )
+} 

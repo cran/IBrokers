@@ -92,27 +92,28 @@ function(conn, Contract,endDateTime,
   response <- character(0)  # currently read response
 
   if(verbose) {
-    cat('waiting for TWS reply ...')
+    cat('waiting for TWS reply on',Contract$symbol,'...')
     iter <- 1
     flush.console()
   }
 
   while(waiting) {
-    socketSelect(list(con), FALSE, NULL)
+    if( !socketSelect(list(con), FALSE, 0.25))
+      next
     curMsg <- readBin(con,character(),1)
     if(verbose) {
       cat('.')
       if(iter %% 30 == 0) cat('\n')
       flush.console()
       iter <- iter + 1
-      Sys.sleep(0.25)
+      #Sys.sleep(0.25)
     }
 
     if(length(curMsg) > 0) {
       # watch for error messages
       if(curMsg == .twsIncomingMSG$ERR_MSG) {
         if(!errorHandler(con,verbose,OK=c(165,300,366,2104,2106,2107))) {
-          #cat('\n')
+          cat('failed.\n')
           #stop('Unable to complete historical data request', call.=FALSE)
           on.exit()
           invisible(return())
@@ -124,6 +125,7 @@ function(conn, Contract,endDateTime,
         nbin <- as.numeric(header[5])*9
         req.from <- header[3]
         req.to   <- header[4]
+        Sys.sleep(2) # add delay for Windows issues - readBin on M$ is bad, bad, bad...
         response <- readBin(con,character(),nbin)
         waiting <- FALSE
         if(verbose) {
@@ -194,9 +196,9 @@ reqHistory <- function(conn, Contract, barSize="1 min", ...)
     endDateTime <- Sys.Date()-seq(360, 0, -5)
     duration <- "5 D"
   } else
-  if(barSize == "15 min") {
+  if(barSize == "15 mins") {
     endDateTime <- Sys.Date()-seq(360, 0, -10)
     duration <- "10 D"
   }
-  reqHistoricalData(conn, Contract, barSize=barSize, duration=duration, endDateTime=endDateTime)
+  reqHistoricalData(conn, Contract, barSize=barSize, duration=duration, endDateTime=endDateTime, ...)
 }

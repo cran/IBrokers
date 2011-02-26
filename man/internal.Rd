@@ -8,6 +8,12 @@
 \alias{twsComboLeg}
 \alias{twsBAG}
 \alias{twsDEBUG}
+\alias{reqManagedAccts}
+\alias{requestFA}
+\alias{replaceFA}
+\alias{reqOpenOrders}
+\alias{reqScannerParameters}
+\alias{reqScannerSubscription}
 \title{ Internal TWS-API MSG and ERR List }
 \description{
 Internal List of MSG Codes and Undocumented (Experimental) Functions

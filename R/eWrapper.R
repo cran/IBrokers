@@ -13,7 +13,7 @@ eWrapper <- function(debug=FALSE) {
   #   the third is the debug version (raw data console output)
 
   if(is.null(debug)) {
-    errorMessage <- function(curMsg, msg, timestamp, file, ...)
+    errorMessage <- function(curMsg, msg, timestamp, file, twsconn, ...)
     {
       cat(msg,"\n")
       #c(curMsg, msg)
@@ -69,8 +69,12 @@ eWrapper <- function(debug=FALSE) {
       e_order_status(curMsg, msg)
       c(curMsg, msg)
     }
-    errorMessage <- function(curMsg, msg, timestamp, file, ...)
+    errorMessage <- function(curMsg, msg, timestamp, file, twsconn, ...)
     {
+      if(msg[3] == "1100")
+        twsconn$connected <- FALSE
+      if(msg[3] %in% c("1101","1102"))
+        twsconn$connected <- TRUE
       cat("TWS Message:",msg,"\n")
     }
     openOrder  <- function(curMsg, msg, timestamp, file,  ...) { c(curMsg, msg) }
@@ -101,12 +105,26 @@ eWrapper <- function(debug=FALSE) {
       symbols <- get.Data("symbols")
       e_update_mkt_depthL2(NULL, msg, timestamp, file, symbols, ...)
     }
-    updateNewsBulletin  <- function(curMsg, msg, timestamp, file,  ...) { c(curMsg, msg) }
+    updateNewsBulletin  <- function(curMsg, msg, timestamp, file,  ...) 
+    { 
+      cat("newsMsgId: ",msg[2],
+          "newsMsgType: ",msg[3],
+          "newsMessage: ",msg[4],
+          "origExch:", msg[5], "\n")
+      c(curMsg, msg) 
+    }
     managedAccounts  <- function(curMsg, msg, timestamp, file,  ...) { c(curMsg, msg) }
     receiveFA  <- function(curMsg, msg, timestamp, file,  ...) { c(curMsg, msg) }
     historicalData  <- function(curMsg, msg, timestamp, file,  ...) { c(curMsg, msg) }
-    scannerParameters  <- function(curMsg, msg, timestamp, file,  ...) { c(curMsg, msg) }
-    scannerData  <- function(curMsg, msg, timestamp, file,  ...) { c(curMsg, msg) }
+    scannerParameters  <- function(curMsg, msg, timestamp, file,  ...) { 
+      cat(msg <- rawToChar(msg[ -which(msg == as.raw(0))]))
+      c(curMsg, msg) 
+    }
+    scannerData  <- function(curMsg, reqId, rank, contract, distance,
+                             benchmark, projection, legsStr)
+    { 
+      e_scannerData(curMsg, reqId, rank, contract, distance, benchmark, projection, legsStr)
+    }
     scannerDataEnd  <- function(curMsg, msg, timestamp, file,  ...) { c(curMsg, msg) }
     realtimeBars  <- function(curMsg, msg, timestamp, file,  ...) 
     { 
@@ -114,7 +132,10 @@ eWrapper <- function(debug=FALSE) {
       e_real_time_bars(curMsg, msg, symbols, file, ...) 
     }
     currentTime  <- function(curMsg, msg, timestamp, file,  ...) { c(curMsg, msg) }
-    fundamentalData  <- function(curMsg, msg, timestamp, file,  ...) { c(curMsg, msg) }
+    fundamentalData  <- function(curMsg, msg, timestamp, file,  ...) 
+    { 
+      e_fundamentalData(curMsg, msg) 
+    }
     deltaNeutralValidation  <- function(curMsg, msg, timestamp, file,  ...) { c(curMsg, msg) }
     tickSnapshotEnd  <- function(curMsg, msg, timestamp, file,  ...) { c(curMsg, msg) }
   } else {
@@ -122,7 +143,7 @@ eWrapper <- function(debug=FALSE) {
     tickPrice <- tickSize <-
     tickOptionComputation <- tickGeneric <-
     tickString <- tickEFP <-
-    orderStatus <- errorMessage <- openOrder <- openOrderEnd <-
+    orderStatus <- openOrder <- openOrderEnd <-
     updateAccountValue <- updateAccountTime <- updatePortfolio <- 
     accountDownloadEnd <- nextValidId <-
     contractDetails <- bondContractDetails <-
@@ -136,6 +157,9 @@ eWrapper <- function(debug=FALSE) {
       function(curMsg, msg, timestamp, file, ...) {
         cat(as.character(timestamp),curMsg, msg,"\n",file=file[[1]], append=TRUE,...) 
       }
+    errorMessage <- function(curMsg, msg, timestamp, file, twsconn, ...) {
+      cat(as.character(timestamp),curMsg, msg,"\n",file=file[[1]], append=TRUE,...) 
+    }
   }
 
   eW <- list(

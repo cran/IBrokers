@@ -1,12 +1,14 @@
 ibgConnect <- function(clientId=1, host="localhost",
                                    port=4001, verbose=TRUE,
-                                   timeout=5, filename=NULL) {
+                                   timeout=5, filename=NULL,
+                                   blocking=.Platform$OS.type=="windows") {
   twsConnect(clientId, host, port, verbose, timeout, filename)
 }
 
 twsConnect <- twsConnect2 <- function(clientId=1, host="localhost",
                                       port=7496, verbose=TRUE,
-                                      timeout=5, filename=NULL) {
+                                      timeout=5, filename=NULL,
+                                      blocking=.Platform$OS.type=="windows") {
    if(is.null(getOption('digits.secs'))) 
      options(digits.secs=6)
 
@@ -16,19 +18,20 @@ twsConnect <- twsConnect2 <- function(clientId=1, host="localhost",
    if(is.null(filename)) {
      start.time <- Sys.time()
      s <- socketConnection(host = host, port = port,
-                           open='ab')
+                           open='ab', blocking=blocking)
 
      on.exit(close(s))
      if(!isOpen(s)) { 
        close(s)
        stop(paste("couldn't connect to TWS on port",port))
      }
-     CLIENT_VERSION <- "46"
+     CLIENT_VERSION <- "47"
 
      writeBin(c(CLIENT_VERSION,as.character(clientId)), s)
      
      while(TRUE) {
-       socketSelect(list(s), FALSE, NULL)
+       if( !socketSelect(list(s), FALSE, 0.1))
+         next
        curMsg <- readBin(s, character(), 1)
        if(length(curMsg) > 0) {
          if(curMsg == .twsIncomingMSG$ERR_MSG) {
@@ -63,6 +66,7 @@ twsConnect <- twsConnect2 <- function(clientId=1, host="localhost",
      twsconn$port <- port
      twsconn$server.version <- SERVER_VERSION
      twsconn$connected.at <- CONNECTION_TIME
+     twsconn$connected <- NULL # not yet used
      class(twsconn) <- c("twsconn","environment")
      return(twsconn)
   } else { 
@@ -175,11 +179,25 @@ is.twsPlayback <- function(x)
   inherits(x, "twsPlayback") || inherits(x, "twsplay")
 }
 
-isConnected <- function(x)
+isConnected <- function(twsconn)
 {
-  if(is.twsConnection(x)) {
-    if(inherits(try(isOpen(x[[1]]), silent=TRUE), 'try-error')) {
+  is_open <- function(con) {
+    if(inherits(try(isOpen(con), silent=TRUE), 'try-error')) {
       FALSE
     } else TRUE 
-  } else isOpen(x)
+  }
+  if( !is.twsConnection(twsconn))
+    stop("isConnected requires a twsconn object")
+
+  if( !is.null(twsconn$connected)) {
+    return( is_open(twsconn[[1]]) && twsconn$connected )
+  } else {
+    is_open(twsconn[[1]])
+  }
+
+#  if(is.twsConnection(x)) {
+#    if(inherits(try(isOpen(x[[1]]), silent=TRUE), 'try-error')) {
+#      FALSE
+#    } else TRUE 
+#  } else isOpen(x)
 } 
