@@ -186,8 +186,10 @@ isConnected <- function(twsconn)
       FALSE
     } else TRUE 
   }
-  if( !is.twsConnection(twsconn))
-    stop("isConnected requires a twsconn object")
+  if( !is.twsConnection(twsconn)) {
+    warning("isConnected requires a twsconn object")
+    return(FALSE)
+  }
 
   if( !is.null(twsconn$connected)) {
     return( is_open(twsconn[[1]]) && twsconn$connected )
