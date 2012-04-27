@@ -1,0 +1,6 @@
+o  fixed partial arguments for CRAN checks
+--This line, and those below, will be ignored--
+
+M    R/eWrapper.data.R
+M    R/eWrapper.MktData.CSV.R
+M    R/reqHistoricalData.R
