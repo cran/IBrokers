@@ -4,4 +4,3 @@
   packageStartupMessage("See ?IBrokers for details.")
 }
 
-.internal <- eval(parse(text=".Internal"))

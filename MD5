@@ -1,4 +1,4 @@
-08bc4701eabf345bdc55fc054815ca4a *DESCRIPTION
+86b408905f4681439e72753e01d113af *DESCRIPTION
 80d51f69258b34d111dbbb3ea3242acc *NAMESPACE
 7b8033288fc45b5537cd4640949bd175 *R/IBrokersRef.R
 c321a5c48f570a2f86a021efe2cce9fe *R/Scanner.R
@@ -52,15 +52,15 @@ ccee71576e8180ff62102e59acbb7c59 *R/twsOption.R
 44452a405c543dcbcc1c4a3742aca07b *R/twsOrderState.R
 6af8380aa222969a83fa1041730ac646 *R/twsPortfolioValue.R
 7ec265aaa08f5dd166dd5bb3878f7862 *R/twsTickType.R
-e3f0551ff80c4d81d4680ac387f1a8bd *R/zzz.R
+f7fae867b171901d4181dddbcbe04484 *R/zzz.R
 baad93480d5027ab488e1079af1f4948 *WISHLIST
 831c5a52d58bf16953ed52605c0fd3de *inst/doc/IBrokers.Rnw
-a09bd3cffdf53e7ce9d765d696dd5a3c *inst/doc/IBrokers.pdf
+2f06f67781338f9328a6b6358af14b29 *inst/doc/IBrokers.pdf
 ca2bc9429ea8505b1ea88f15c0295c17 *inst/doc/IBrokersREFCARD.Rnw
-fda9e08c38c87426a7f3b432538b615a *inst/doc/IBrokersREFCARD.pdf
+2d0e19aa2c23ce6bf2c5ab0addde714d *inst/doc/IBrokersREFCARD.pdf
 ef4b3b193e2ed6f0fbadb551e76110d4 *inst/doc/IBrokersRef.pdf
 14226cf18ef15335e5e0f242f9bc6671 *inst/doc/RealTime.Rnw
-e7df2d87cc2dcd5b39d6956f7b8a29e0 *inst/doc/RealTime.pdf
+dab3450113e1beafdefb3b8378a24b4d *inst/doc/RealTime.pdf
 e98447121296a79f37cab25810bf5682 *man/IBrokers-package.Rd
 d20e7f4db37ea28f07014043c63be3a8 *man/calculateImpliedVolatility.Rd
 85a5fe7401b3f6fdea5c6701f0c229e3 *man/eWrapper.Rd
