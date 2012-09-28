@@ -1,4 +1,4 @@
-86b408905f4681439e72753e01d113af *DESCRIPTION
+6edde96aef113911e7dcc7dff61d1511 *DESCRIPTION
 80d51f69258b34d111dbbb3ea3242acc *NAMESPACE
 7b8033288fc45b5537cd4640949bd175 *R/IBrokersRef.R
 c321a5c48f570a2f86a021efe2cce9fe *R/Scanner.R
@@ -16,7 +16,7 @@ cac7458c539a979df1826fb62588743a *R/errorHandler.R
 d93ad96da0fb0a0f75b3f2f058b230f4 *R/eventHandlers.R
 92a54bcd869b0e475784cbee38b359a0 *R/exerciseOptions.R
 3bd702e5b1db1b62aa4026810d977df7 *R/placeOrder.R
-404e234edf4e7fe7634e905f4e372246 *R/processMsg.R
+3bb933e6f30958c44d91dc2ff1ab2181 *R/processMsg.R
 e4ee5ac6e010daca41ac2d361a199245 *R/reqAccountUpdates.R
 ef7f97b9fafcb755bb1e0e3c6b65c378 *R/reqContractDetails.R
 98a994f6416fd5830e341362fb413268 *R/reqCurrentTime.R
@@ -34,7 +34,7 @@ be785db891c0cb26320b35450a8472a4 *R/reqManagedAccts.R
 fb9e2bc0070dc09b1d73de5dcec0d4e0 *R/setServerLogLevel.R
 de217d86c1b70fa94dc78a986cf7c46c *R/twsBAG.R
 83550e28ab81e23f009a8e6f893eb0bb *R/twsComboLeg.R
-aae2e11019f5758f45a945737ee56938 *R/twsConnect.R
+f5f6c16ee2e5aef02576eb8a3f1e9660 *R/twsConnect.R
 4aae309e0c1dfb3ea6d975a06b629aa2 *R/twsConnectionTime.R
 d281bcc624b1c356163cf932e6725639 *R/twsContract.R
 7f887ff5bc8c795e0e599af136cfd72d *R/twsCurrency.R
@@ -52,15 +52,15 @@ ccee71576e8180ff62102e59acbb7c59 *R/twsOption.R
 44452a405c543dcbcc1c4a3742aca07b *R/twsOrderState.R
 6af8380aa222969a83fa1041730ac646 *R/twsPortfolioValue.R
 7ec265aaa08f5dd166dd5bb3878f7862 *R/twsTickType.R
-f7fae867b171901d4181dddbcbe04484 *R/zzz.R
+6e52282406e580845ea2d3207042b0ad *R/zzz.R
 baad93480d5027ab488e1079af1f4948 *WISHLIST
 831c5a52d58bf16953ed52605c0fd3de *inst/doc/IBrokers.Rnw
-2f06f67781338f9328a6b6358af14b29 *inst/doc/IBrokers.pdf
+409a7eaf02087514fcbd3c567036b7f7 *inst/doc/IBrokers.pdf
 ca2bc9429ea8505b1ea88f15c0295c17 *inst/doc/IBrokersREFCARD.Rnw
-2d0e19aa2c23ce6bf2c5ab0addde714d *inst/doc/IBrokersREFCARD.pdf
+b60160d48c50dd520ac0d283f97cfe19 *inst/doc/IBrokersREFCARD.pdf
 ef4b3b193e2ed6f0fbadb551e76110d4 *inst/doc/IBrokersRef.pdf
 14226cf18ef15335e5e0f242f9bc6671 *inst/doc/RealTime.Rnw
-dab3450113e1beafdefb3b8378a24b4d *inst/doc/RealTime.pdf
+17b8957433dc2bd04ac227d694a34d31 *inst/doc/RealTime.pdf
 e98447121296a79f37cab25810bf5682 *man/IBrokers-package.Rd
 d20e7f4db37ea28f07014043c63be3a8 *man/calculateImpliedVolatility.Rd
 85a5fe7401b3f6fdea5c6701f0c229e3 *man/eWrapper.Rd
