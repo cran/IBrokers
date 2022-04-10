@@ -58,23 +58,26 @@ time as returned from the TWS server will be used. This
 is the preferred method for backfilling data. The \sQuote{TZ}
 portion of the string is optional.
 
-Legal \code{barSize} settings are technically
+Legal \code{barSize} values are
 \sQuote{1 secs},\sQuote{5 secs},\sQuote{15 secs},
 \sQuote{30 mins},\sQuote{1 min},\sQuote{2 mins},
 \sQuote{3 mins},\sQuote{5 mins},\sQuote{15 mins},
 \sQuote{30 mins},\sQuote{1 hour},\sQuote{1 day},
 \sQuote{1 week},\sQuote{1 month},\sQuote{3 months},
-and \sQuote{1 year}. They must be specified exactly
-and there is no guarantee from the API that all
-will work for all securities or durations. 
+and \sQuote{1 year}.
 
-The duration string must be of the form \sQuote{n S}
-where the last character may be any one of
+Partial matching is attempted, but it is best to specify the \code{barSize}
+value exactly as they are given above. There is no guarantee from the API
+that all will work for all securities or durations.
+
+The duration string must be of the form \sQuote{n u}
+where \sQuote{n} is an integer and \sQuote{u} is one of:
 \sQuote{S} (seconds),
 \sQuote{D} (days),
 \sQuote{W} (weeks),
 \sQuote{M} (months),
-and \sQuote{Y} (year).
+or \sQuote{Y} (year).
+For example, \sQuote{1 W} would return one week of data.
 At present the limit for years is 1.
 
 \code{useRTH} takes either \sQuote{1} or \sQuote{0},
@@ -113,7 +116,7 @@ Returns an \code{xts} object containing the requested data, along
 with additional information stored in the objects \code{xtsAttributes},
 unless \code{callback} or \code{file} is specified.
 }
-\references{ Interactive Brokers \url{www.interactivebrokers.com} }
+\references{ Interactive Brokers \url{https://www.interactivebrokers.com} }
 \author{ Jeffrey A. Ryan }
 \note{
 The rules for historical data requests are somewhat vague. Not all

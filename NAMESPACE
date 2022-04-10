@@ -1,4 +1,9 @@
 #useDynLib(IBrokers)
+importFrom(utils,
+           flush.console,
+           str,
+           timestamp,
+           write.table)
 import(zoo, xts)
 
 export(twsConnect,
@@ -63,6 +68,7 @@ export(twsConnect,
        reqHistory,              # convenience wrapper
 
        reqMktData,
+       reqMktDataType,
        cancelMktData,
       .calculateImpliedVolatility,
        calculateImpliedVolatility,

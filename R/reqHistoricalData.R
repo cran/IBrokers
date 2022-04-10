@@ -55,9 +55,12 @@ function(conn, Contract,endDateTime,
                     '1 min', '2 mins','3 mins','5 mins','15 mins',
                     '30 mins','1 hour','1 day','1 week','1 month',
                     '3 months','1 year')
-  if(!barSize %in% validBarSize)
-    stop(paste('unknown barSize try: ',paste(validBarSize,sep=";")))
+  barSize <- match.arg(barSize, validBarSize)
 
+  if(!isTRUE(grepl("[[:digit:]]+ [SDWMY]", duration))) {
+    stop("duration must be a number followed by a space and a valid unit ",
+         "(S, D, W, M, or Y): e.g. '1 W'")
+  }
 
   if(missing(endDateTime) || is.null(endDateTime)) 
     endDateTime <- strftime(
@@ -66,6 +69,10 @@ function(conn, Contract,endDateTime,
                      format='%Y%m%d %H:%M:%S',usetz=FALSE)
 
   VERSION <- "4"
+
+  if(isTRUE(whatToShow[1] == "ADJUSTED_LAST")) {
+    endDateTime <- ""
+  }
 
   signals <- c(.twsOutgoingMSG$REQ_HISTORICAL_DATA, # '20'
                VERSION,
